@@ -8,7 +8,6 @@ import json
 from pathlib import Path
 from typing import Any
 
-
 DEFAULT_CASES = ("SG-003", "SG-007")
 
 
