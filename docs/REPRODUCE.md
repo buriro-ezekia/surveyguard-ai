@@ -1,16 +1,20 @@
 # Reproduction guide
 
-This guide is written for a clean environment and covers the simple baseline, automated checks and the agentic workflow.
+This guide reproduces the frozen baseline, repository checks and the final Iteration-8 hybrid workflow.
 
 ## Requirements
 
 Baseline and tests:
 
-- Git;
-- Python 3.11 or later;
-- internet access only for the initial Python development dependencies.
+- Git
+- Python 3.11 or later
+- internet access only for initial Python package installation
 
-Agentic evaluation additionally needs an OpenAI-compatible chat-completions endpoint. The default configuration targets a local Ollama server; a compatible hosted endpoint may be substituted through environment variables.
+Final agentic evaluation additionally requires:
+
+- a local `llama-server` or another OpenAI-compatible chat-completions endpoint
+- Qwen2.5 1.5B in a llama.cpp-readable local model file
+- enough local RAM for CPU inference
 
 ## 1. Clone the hackathon branch
 
@@ -46,7 +50,7 @@ ruff check .
 pytest -q
 ```
 
-## 4. Reproduce the simple baseline
+## 4. Reproduce the frozen baseline
 
 ```bash
 python -m src.surveyguard.evaluation
@@ -61,93 +65,118 @@ qa_resolution_score=0.619643
 
 The baseline requires no model, API key or private data.
 
-## 5. Configure an agent provider
+## 5. Start the evaluated local model endpoint
 
-The default adapter expects an OpenAI-compatible endpoint.
+The final measured run used **Qwen2.5 1.5B through llama.cpp in CPU-only mode**.
 
-For a local Ollama-compatible endpoint, make sure the server is running and the selected model is available. The current quick-evaluation default is:
+Point `-m` to your local llama.cpp-readable Qwen2.5 1.5B model file:
 
-```text
-base URL: http://localhost:11434/v1
-model: qwen2.5:3b
-temperature: 0
+```bash
+llama-server \
+  -m /path/to/qwen2.5-1.5b-model.gguf \
+  --device none \
+  --no-repack \
+  --ctx-size 1024 \
+  --batch-size 128 \
+  --ubatch-size 64 \
+  --parallel 1 \
+  --gpu-layers 0 \
+  --host 127.0.0.1 \
+  --port 8081 \
+  --api-key surveyguard-local
 ```
+
+The exact filename may vary depending on how the model was obtained. Do not commit model weights.
+
+Why CPU-only? On the evaluated Windows machine, Ollama 3B and 1.5B attempts failed during CPU repack allocation, and a llama.cpp Vulkan-host attempt also failed. The CPU-only `--device none --no-repack` configuration was the first reliable runtime and is therefore the documented final path.
+
+## 6. Configure SurveyGuard
 
 ### Windows PowerShell
 
 ```powershell
-$env:SURVEYGUARD_BASE_URL = "http://localhost:11434/v1"
-$env:SURVEYGUARD_MODEL = "qwen2.5:3b"
-$env:SURVEYGUARD_API_KEY = "ollama"
-$env:SURVEYGUARD_TIMEOUT_SECONDS = "60"
+$env:SURVEYGUARD_BASE_URL = "http://127.0.0.1:8081/v1"
+$env:SURVEYGUARD_MODEL = "qwen2.5:1.5b"
+$env:SURVEYGUARD_API_KEY = "surveyguard-local"
+$env:SURVEYGUARD_TIMEOUT_SECONDS = "300"
 ```
 
 ### Linux or macOS
 
 ```bash
-export SURVEYGUARD_BASE_URL="http://localhost:11434/v1"
-export SURVEYGUARD_MODEL="qwen2.5:3b"
-export SURVEYGUARD_API_KEY="ollama"
-export SURVEYGUARD_TIMEOUT_SECONDS="60"
+export SURVEYGUARD_BASE_URL="http://127.0.0.1:8081/v1"
+export SURVEYGUARD_MODEL="qwen2.5:1.5b"
+export SURVEYGUARD_API_KEY="surveyguard-local"
+export SURVEYGUARD_TIMEOUT_SECONDS="300"
 ```
 
-For a hosted provider, replace the base URL, model and API key. Do not commit credentials.
-
-## 6. Smoke-test the provider and workflow
-
-Before spending time on the complete evaluation, run one deliberately contextual case:
+## 7. Optional smoke test
 
 ```bash
-python -m src.surveyguard.agent_eval --case SG-002 --output artifacts/smoke_SG-002.json
+python -m src.surveyguard.agent_eval \
+  --case SG-002 \
+  --output artifacts/smoke_SG-002.json
 ```
 
-The output is explicitly marked `comparable_with_frozen_baseline=false`. A one-case smoke result must never be presented as the hackathon improvement score.
+A one-case smoke run is explicitly marked `comparable_with_frozen_baseline=false` and must not be presented as the final improvement score.
 
-## 7. Run the complete agentic evaluation
+## 8. Run the complete comparable evaluation
 
 ```bash
-python -m src.surveyguard.agent_eval
+python -m src.surveyguard.agent_eval \
+  --output artifacts/agent_evaluation.json \
+  --trajectories artifacts/trajectories
 ```
 
-Only this no-`--case` run evaluates the same 14 synthetic cases used by the baseline and is marked `comparable_with_frozen_baseline=true`. Gold labels are withheld from the agents.
-
-Outputs are written to:
+The complete run is marked:
 
 ```text
-artifacts/agent_evaluation.json
-artifacts/trajectories/SG-001.json
-...
-artifacts/trajectories/SG-014.json
+evaluation_scope=full_fixed_corpus
+comparable_with_frozen_baseline=true
 ```
 
-The console reports:
+The measured Iteration-8 reference result was:
 
-- number of evaluated cases;
-- QARS;
-- total runtime; and
-- output path.
+```text
+cases=14
+QARS=1.000000
+action_accuracy=1.000000
+priority_accuracy=1.000000
+evidence_coverage=1.000000
+safety_rate=1.000000
+runtime_seconds=597.411
+runtime_seconds_per_case=42.672
+```
 
-The result must not be added to the improvement changelog as measured evidence until the complete run succeeds and the provider/model identity is recorded.
+Runtime is hardware-dependent, so exact seconds need not match. The score should be evaluated from the produced JSON rather than inferred from runtime.
 
-## 8. Inspect one trajectory
+## 9. Inspect trajectories
 
-Each trajectory records:
+Each case trajectory records:
 
-- exact system instruction;
-- exact case payload;
-- raw model response;
-- parsed recommendation;
-- contract or safety errors;
-- independent verification response;
-- runtime; and
-- final human-review recommendation.
+- exact model system instructions
+- exact solver-visible case payload
+- deterministic `policy_tool` assessment
+- raw Triage response
+- parsed Triage assessment
+- raw Verification response
+- parsed verification result
+- `model_final_assessment`
+- whether `policy_override_applied`
+- final assessment
+- final human-review recommendation
+- per-agent runtime
 
-No raw survey respondent data are needed because the public corpus is synthetic.
+The final reference run applied a policy override on 8 of 14 cases.
 
-## 9. Cost and runtime
+## 10. Cost
 
-The baseline has no model cost.
+The evaluated local run incurred **$0 direct API charge**. It consumed local CPU time and energy, which are not claimed to be zero-cost.
 
-Agent cost depends on the selected provider. Local Ollama has no per-call API charge but consumes local compute. A hosted-provider run must record the provider's actual cost or a defensible estimate from the evaluated request usage.
+## 11. Integrity notes
 
-Do not report an estimated final runtime or cost before completing the measured run.
+- `solver_view()` strips gold `expected` labels before execution.
+- `run_workflow()` rejects any case that still contains gold labels.
+- The policy tool uses rule family, supplied record evidence and context only.
+- The policy tool does not branch on case ID or expected output.
+- Public evaluation data are synthetic.
