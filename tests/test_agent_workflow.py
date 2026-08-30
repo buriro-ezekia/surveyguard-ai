@@ -2,7 +2,7 @@
 
 import json
 
-from src.surveyguard.contracts import parse_recommendation
+from src.surveyguard.contracts import parse_recommendation, parse_verification
 from src.surveyguard.providers import ScriptedProvider
 from src.surveyguard.workflow import run_workflow
 
@@ -133,3 +133,98 @@ def test_single_case_selector_is_explicit() -> None:
     cases = [{"id": "A"}, {"id": "B"}]
     assert _select_cases(cases, "B") == [{"id": "B"}]
     assert _select_cases(cases, None) == cases
+
+
+def test_verifier_object_issue_is_normalised() -> None:
+    verification = parse_verification(
+        json.dumps(
+            {
+                "approved": False,
+                "issues": [
+                    {
+                        "id": "T-AGENT",
+                        "rationale": "Authorised revisit was ignored.",
+                    }
+                ],
+                "replacement": {
+                    "action": "reject_finding",
+                    "priority": "low",
+                    "evidence_fields": [
+                        "household_id",
+                        "revisit_authorised",
+                        "visit_number",
+                    ],
+                    "rationale": "The duplicate is an authorised revisit.",
+                    "confidence": 0.95,
+                    "proposed_value": None,
+                },
+            }
+        )
+    )
+
+    assert verification.issues == ("Authorised revisit was ignored.",)
+    assert verification.replacement is not None
+    assert verification.replacement.action == "reject_finding"
+
+
+def test_contextual_exception_replacement_survives_verification() -> None:
+    case = {
+        "id": "T-CONTEXT",
+        "finding": {
+            "rule_id": "SCHOOL_AGE",
+            "rule_type": "skip_logic",
+            "severity": "medium",
+            "fields": ["child_age", "school_attendance"],
+            "evidence": {"child_age": 4, "school_attendance": "yes"},
+        },
+        "context": {
+            "education_level": "pre-primary",
+            "questionnaire_note": "School attendance includes pre-primary.",
+        },
+    }
+    provider = ScriptedProvider(
+        [
+            json.dumps(
+                {
+                    "action": "defer_review",
+                    "priority": "medium",
+                    "evidence_fields": ["child_age", "school_attendance"],
+                    "rationale": "Need more review.",
+                    "confidence": 0.2,
+                    "proposed_value": None,
+                }
+            ),
+            json.dumps(
+                {
+                    "approved": False,
+                    "issues": [
+                        {
+                            "rationale": (
+                                "Explicit questionnaire context resolves the apparent exception."
+                            )
+                        }
+                    ],
+                    "replacement": {
+                        "action": "reject_finding",
+                        "priority": "low",
+                        "evidence_fields": [
+                            "child_age",
+                            "school_attendance",
+                            "education_level",
+                            "questionnaire_note",
+                        ],
+                        "rationale": (
+                            "Pre-primary is explicitly included in school attendance."
+                        ),
+                        "confidence": 0.95,
+                        "proposed_value": None,
+                    },
+                }
+            ),
+        ]
+    )
+
+    result = run_workflow(case, provider)
+    assert result.recommendation["action"] == "reject_finding"
+    assert result.recommendation["priority"] == "low"
+    assert result.recommendation["auto_apply"] is False
