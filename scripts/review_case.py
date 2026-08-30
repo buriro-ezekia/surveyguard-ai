@@ -49,7 +49,8 @@ def main() -> None:
     if "proposed_value" in recommendation:
         print(f"Proposed value: {recommendation['proposed_value']}")
     print(f"Auto-apply: {str(recommendation.get('auto_apply', False)).lower()}")
-    print(f"Human checkpoint required: {str(result.trajectory['human_checkpoint_required']).lower()}")
+    checkpoint = str(result.trajectory["human_checkpoint_required"]).lower()
+    print(f"Human checkpoint required: {checkpoint}")
     print(f"Rationale: {recommendation.get('rationale')}")
 
     if args.trajectory is not None:
