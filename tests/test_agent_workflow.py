@@ -227,4 +227,35 @@ def test_contextual_exception_replacement_survives_verification() -> None:
     result = run_workflow(case, provider)
     assert result.recommendation["action"] == "reject_finding"
     assert result.recommendation["priority"] == "low"
+    assert result.recommendation["evidence_fields"] == [
+        "child_age",
+        "school_attendance",
+        "education_level",
+        "questionnaire_note",
+    ]
     assert result.recommendation["auto_apply"] is False
+
+
+def test_trigger_fields_are_added_to_agent_evidence() -> None:
+    provider = ScriptedProvider(
+        [
+            json.dumps(
+                {
+                    "action": "reject_finding",
+                    "priority": "low",
+                    "evidence_fields": ["revisit_authorised"],
+                    "rationale": "The revisit is authorised.",
+                    "confidence": 0.9,
+                    "proposed_value": None,
+                }
+            ),
+            json.dumps({"approved": True, "issues": [], "replacement": None}),
+        ]
+    )
+
+    result = run_workflow(CASE, provider)
+
+    assert result.recommendation["evidence_fields"] == [
+        "household_id",
+        "revisit_authorised",
+    ]
