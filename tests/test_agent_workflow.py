@@ -395,10 +395,12 @@ def test_verifier_receives_verdict_not_external_action_label() -> None:
 
     run_workflow(CASE, provider)
     verifier_input = json.loads(provider.calls[1]["user"])
-    proposed = verifier_input["proposed_recommendation"]
+    proposed = verifier_input["proposed_assessment"]
 
-    assert proposed["verdict"] == "confirmed_issue"
+    assert "context_resolves_flag" in proposed
+    assert "needs_additional_review" in proposed
     assert "action" not in proposed
+    assert "verdict" not in proposed
 
 
 def test_agent_instructions_treat_context_as_observed_fact() -> None:
@@ -406,3 +408,125 @@ def test_agent_instructions_treat_context_as_observed_fact() -> None:
     assert "Never demand redundant confirmation" in TRIAGE_SYSTEM
     assert "observed fact" in VERIFY_SYSTEM
     assert "questionnaire_note" in VERIFY_SYSTEM
+
+
+def test_structured_assessment_maps_confirmed_issue() -> None:
+    case = {
+        "id": "T-CONFIRMED",
+        "finding": {
+            "rule_id": "RANGE_AGE",
+            "rule_type": "range_violation",
+            "severity": "high",
+            "fields": ["respondent_age"],
+            "evidence": {"respondent_age": 135},
+        },
+        "context": {},
+    }
+    provider = ScriptedProvider(
+        [
+            json.dumps(
+                {
+                    "context_resolves_flag": False,
+                    "flag_supported_by_record": True,
+                    "needs_additional_review": False,
+                    "specific_correction_supported": False,
+                    "evidence_fields": ["respondent_age"],
+                    "rationale": "The recorded age is impossible.",
+                    "confidence": 0.95,
+                    "proposed_value": None,
+                }
+            ),
+            json.dumps({"approved": True, "issues": [], "replacement": None}),
+        ]
+    )
+
+    result = run_workflow(case, provider)
+    assert result.recommendation["action"] == "accept_finding"
+    assert result.recommendation["priority"] == "high"
+
+
+def test_structured_assessment_maps_valid_exception() -> None:
+    provider = ScriptedProvider(
+        [
+            json.dumps(
+                {
+                    "context_resolves_flag": True,
+                    "flag_supported_by_record": None,
+                    "needs_additional_review": False,
+                    "specific_correction_supported": False,
+                    "evidence_fields": ["household_id", "revisit_authorised"],
+                    "rationale": "The duplicate is an authorised revisit.",
+                    "confidence": 0.95,
+                    "proposed_value": None,
+                }
+            ),
+            json.dumps({"approved": True, "issues": [], "replacement": None}),
+        ]
+    )
+
+    result = run_workflow(CASE, provider)
+    assert result.recommendation["action"] == "reject_finding"
+    assert result.recommendation["priority"] == "low"
+
+
+def test_structured_assessment_defers_when_review_remains() -> None:
+    provider = ScriptedProvider(
+        [
+            json.dumps(
+                {
+                    "context_resolves_flag": False,
+                    "flag_supported_by_record": True,
+                    "needs_additional_review": True,
+                    "specific_correction_supported": False,
+                    "evidence_fields": ["household_id"],
+                    "rationale": "The anomaly is real but still needs independent review.",
+                    "confidence": 0.7,
+                    "proposed_value": None,
+                }
+            ),
+            json.dumps({"approved": True, "issues": [], "replacement": None}),
+        ]
+    )
+
+    result = run_workflow(CASE, provider)
+    assert result.recommendation["action"] == "defer_review"
+
+
+def test_structured_assessment_maps_supported_correction() -> None:
+    case = {
+        "id": "T-CORRECTION",
+        "finding": {
+            "rule_id": "HH_SIZE",
+            "rule_type": "consistency",
+            "severity": "high",
+            "fields": ["household_size", "roster_count"],
+            "evidence": {"household_size": 4, "roster_count": 5},
+        },
+        "context": {"roster_complete": True},
+    }
+    provider = ScriptedProvider(
+        [
+            json.dumps(
+                {
+                    "context_resolves_flag": False,
+                    "flag_supported_by_record": True,
+                    "needs_additional_review": False,
+                    "specific_correction_supported": True,
+                    "evidence_fields": [
+                        "household_size",
+                        "roster_count",
+                        "roster_complete",
+                    ],
+                    "rationale": "The completed roster supports household size 5.",
+                    "confidence": 0.95,
+                    "proposed_value": 5,
+                }
+            ),
+            json.dumps({"approved": True, "issues": [], "replacement": None}),
+        ]
+    )
+
+    result = run_workflow(case, provider)
+    assert result.recommendation["action"] == "propose_correction"
+    assert result.recommendation["proposed_value"] == 5
+    assert result.recommendation["auto_apply"] is False
