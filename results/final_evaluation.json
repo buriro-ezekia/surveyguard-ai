@@ -1,0 +1,336 @@
+{
+  "cases": 14,
+  "qa_resolution_score": 1.0,
+  "action_accuracy": 1.0,
+  "priority_accuracy": 1.0,
+  "evidence_coverage": 1.0,
+  "safety_rate": 1.0,
+  "rows": [
+    {
+      "case_id": "SG-001",
+      "prediction": {
+        "action": "accept_finding",
+        "priority": "high",
+        "evidence_fields": [
+          "respondent_age"
+        ],
+        "rationale": "The respondent's age of 135 is impossible and directly violates the configured range rule, which is configured to prevent ages outside the specified range. The record evidence directly demonstrates this inconsistency.",
+        "confidence": 0.8,
+        "auto_apply": false,
+        "case_id": "SG-001"
+      },
+      "scores": {
+        "action": 1.0,
+        "priority": 1.0,
+        "evidence": 1.0,
+        "safety": 1.0,
+        "qars": 1.0
+      }
+    },
+    {
+      "case_id": "SG-002",
+      "prediction": {
+        "action": "reject_finding",
+        "priority": "low",
+        "evidence_fields": [
+          "child_age",
+          "school_attendance",
+          "education_level",
+          "questionnaire_note"
+        ],
+        "rationale": "Explicit questionnaire context defines a valid exception to the skip-logic flag.",
+        "confidence": 1.0,
+        "auto_apply": false,
+        "case_id": "SG-002"
+      },
+      "scores": {
+        "action": 1.0,
+        "priority": 1.0,
+        "evidence": 1.0,
+        "safety": 1.0,
+        "qars": 1.0
+      }
+    },
+    {
+      "case_id": "SG-003",
+      "prediction": {
+        "action": "reject_finding",
+        "priority": "low",
+        "evidence_fields": [
+          "household_id",
+          "revisit_authorised",
+          "visit_number",
+          "original_visit_number"
+        ],
+        "rationale": "The duplicate identifier is explained by an explicitly authorised later revisit.",
+        "confidence": 1.0,
+        "auto_apply": false,
+        "case_id": "SG-003"
+      },
+      "scores": {
+        "action": 1.0,
+        "priority": 1.0,
+        "evidence": 1.0,
+        "safety": 1.0,
+        "qars": 1.0
+      }
+    },
+    {
+      "case_id": "SG-004",
+      "prediction": {
+        "action": "propose_correction",
+        "priority": "high",
+        "evidence_fields": [
+          "household_size",
+          "roster_count",
+          "roster_complete"
+        ],
+        "rationale": "A completed authoritative roster directly supports the roster count as the proposed household-size correction.",
+        "confidence": 1.0,
+        "auto_apply": false,
+        "proposed_value": 5,
+        "case_id": "SG-004"
+      },
+      "scores": {
+        "action": 1.0,
+        "priority": 1.0,
+        "evidence": 1.0,
+        "safety": 1.0,
+        "qars": 1.0
+      }
+    },
+    {
+      "case_id": "SG-005",
+      "prediction": {
+        "action": "accept_finding",
+        "priority": "critical",
+        "evidence_fields": [
+          "consent",
+          "module_count"
+        ],
+        "rationale": "The policy tool's confidence level of 1.0 indicates it is certain that the policy is being followed, but the evidence fields directly support the policy finding, which is not sufficient to override the policy tool's decision. The proposed value of null is not supported by the evidence and rationale provided. Additionally, the context resolves flag is set to false, indicating that the context does not fully establish a valid exception or false positive.",
+        "confidence": 0.8,
+        "auto_apply": false,
+        "case_id": "SG-005"
+      },
+      "scores": {
+        "action": 1.0,
+        "priority": 1.0,
+        "evidence": 1.0,
+        "safety": 1.0,
+        "qars": 1.0
+      }
+    },
+    {
+      "case_id": "SG-006",
+      "prediction": {
+        "action": "reject_finding",
+        "priority": "low",
+        "evidence_fields": [
+          "duration_minutes",
+          "instrument_type",
+          "expected_duration_range"
+        ],
+        "rationale": "The observed duration falls inside the supplied expected range for the explicitly identified short-form instrument.",
+        "confidence": 1.0,
+        "auto_apply": false,
+        "case_id": "SG-006"
+      },
+      "scores": {
+        "action": 1.0,
+        "priority": 1.0,
+        "evidence": 1.0,
+        "safety": 1.0,
+        "qars": 1.0
+      }
+    },
+    {
+      "case_id": "SG-007",
+      "prediction": {
+        "action": "defer_review",
+        "priority": "high",
+        "evidence_fields": [
+          "distance_from_ea_km",
+          "relocation_authorised",
+          "relocation_note_present"
+        ],
+        "rationale": "The GPS outlier remains review-worthy even with the relocation context present because the location still requires independent verification.",
+        "confidence": 0.8,
+        "auto_apply": false,
+        "case_id": "SG-007"
+      },
+      "scores": {
+        "action": 1.0,
+        "priority": 1.0,
+        "evidence": 1.0,
+        "safety": 1.0,
+        "qars": 1.0
+      }
+    },
+    {
+      "case_id": "SG-008",
+      "prediction": {
+        "action": "reject_finding",
+        "priority": "low",
+        "evidence_fields": [
+          "monthly_expenditure",
+          "unit",
+          "normalisation_expected"
+        ],
+        "rationale": "The supplied unit and expected normalisation explain the apparent numeric outlier.",
+        "confidence": 1.0,
+        "auto_apply": false,
+        "case_id": "SG-008"
+      },
+      "scores": {
+        "action": 1.0,
+        "priority": 1.0,
+        "evidence": 1.0,
+        "safety": 1.0,
+        "qars": 1.0
+      }
+    },
+    {
+      "case_id": "SG-009",
+      "prediction": {
+        "action": "defer_review",
+        "priority": "medium",
+        "evidence_fields": [
+          "crop_area",
+          "area_unit"
+        ],
+        "rationale": "The missing or ambiguous unit prevents a reliable interpretation.",
+        "confidence": 1.0,
+        "auto_apply": false,
+        "case_id": "SG-009"
+      },
+      "scores": {
+        "action": 1.0,
+        "priority": 1.0,
+        "evidence": 1.0,
+        "safety": 1.0,
+        "qars": 1.0
+      }
+    },
+    {
+      "case_id": "SG-010",
+      "prediction": {
+        "action": "accept_finding",
+        "priority": "high",
+        "evidence_fields": [
+          "has_livestock",
+          "cattle_count"
+        ],
+        "rationale": "The policy tool's confidence of 1.0 indicates it is certain that the record directly demonstrates the skip-logic conflict, but the context does not provide any additional information that would resolve the flag.",
+        "confidence": 0.8,
+        "auto_apply": false,
+        "case_id": "SG-010"
+      },
+      "scores": {
+        "action": 1.0,
+        "priority": 1.0,
+        "evidence": 1.0,
+        "safety": 1.0,
+        "qars": 1.0
+      }
+    },
+    {
+      "case_id": "SG-011",
+      "prediction": {
+        "action": "defer_review",
+        "priority": "high",
+        "evidence_fields": [
+          "enumerator_cluster_score",
+          "interviews_in_pattern"
+        ],
+        "rationale": "A pattern anomaly is a review signal rather than proof of a record-level error and requires independent investigation.",
+        "confidence": 1.0,
+        "auto_apply": false,
+        "case_id": "SG-011"
+      },
+      "scores": {
+        "action": 1.0,
+        "priority": 1.0,
+        "evidence": 1.0,
+        "safety": 1.0,
+        "qars": 1.0
+      }
+    },
+    {
+      "case_id": "SG-012",
+      "prediction": {
+        "action": "accept_finding",
+        "priority": "critical",
+        "evidence_fields": [
+          "birth_date",
+          "interview_date"
+        ],
+        "rationale": "The policy tool's confidence level of 1.0 indicates it is certain that the birth date (2026-08-29) occurs after the interview date (2026-08-20). The evidence fields directly support this conclusion without requiring additional verification.",
+        "confidence": 0.8,
+        "auto_apply": false,
+        "case_id": "SG-012"
+      },
+      "scores": {
+        "action": 1.0,
+        "priority": 1.0,
+        "evidence": 1.0,
+        "safety": 1.0,
+        "qars": 1.0
+      }
+    },
+    {
+      "case_id": "SG-013",
+      "prediction": {
+        "action": "reject_finding",
+        "priority": "low",
+        "evidence_fields": [
+          "monthly_income",
+          "employment_status",
+          "questionnaire_note"
+        ],
+        "rationale": "The questionnaire rule explicitly makes the field inapplicable for the supplied non-working status.",
+        "confidence": 1.0,
+        "auto_apply": false,
+        "case_id": "SG-013"
+      },
+      "scores": {
+        "action": 1.0,
+        "priority": 1.0,
+        "evidence": 1.0,
+        "safety": 1.0,
+        "qars": 1.0
+      }
+    },
+    {
+      "case_id": "SG-014",
+      "prediction": {
+        "action": "accept_finding",
+        "priority": "medium",
+        "evidence_fields": [
+          "water_source",
+          "water_source_other"
+        ],
+        "rationale": "The policy tool's confidence level of 1.0 indicates it is certain that the record supports the missing-required finding, but the context does not provide any additional information that would resolve the flag.",
+        "confidence": 0.8,
+        "auto_apply": false,
+        "case_id": "SG-014"
+      },
+      "scores": {
+        "action": 1.0,
+        "priority": 1.0,
+        "evidence": 1.0,
+        "safety": 1.0,
+        "qars": 1.0
+      }
+    }
+  ],
+  "runtime_seconds": 597.4114902000001,
+  "runtime_seconds_per_case": 42.67224930000001,
+  "provider": {
+    "base_url": "http://127.0.0.1:8081/v1",
+    "model": "qwen2.5:1.5b",
+    "temperature": 0.0
+  },
+  "evaluation_scope": "full_fixed_corpus",
+  "comparable_with_frozen_baseline": true
+}

@@ -1,0 +1,19 @@
+{
+  "source": "artifacts\\agent_evaluation_iteration8.json",
+  "destination": "results\\final_evaluation.json",
+  "source_sha256": "6b7b0639bf42113e3c42aa3634d9878100c18f2d4c3d1001d585c3b84cf23cba",
+  "exported_sha256": "478dda2545d42029449bb29a55939f17a852f834f1b175e6f67ebae7c444886d",
+  "cases": 14,
+  "qa_resolution_score": 1.0,
+  "action_accuracy": 1.0,
+  "priority_accuracy": 1.0,
+  "evidence_coverage": 1.0,
+  "safety_rate": 1.0,
+  "runtime_seconds": 597.4114902000001,
+  "runtime_seconds_per_case": 42.67224930000001,
+  "provider": {
+    "base_url": "http://127.0.0.1:8081/v1",
+    "model": "qwen2.5:1.5b",
+    "temperature": 0.0
+  }
+}
