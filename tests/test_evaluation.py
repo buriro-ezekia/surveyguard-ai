@@ -12,6 +12,22 @@ def test_baseline_score_is_frozen() -> None:
     assert round(result["qa_resolution_score"], 6) == 0.619643
 
 
+def test_gold_labels_are_withheld_from_solver() -> None:
+    seen = {}
+
+    def spy_solver(case):
+        seen.update(case)
+        return {
+            "action": "defer_review",
+            "priority": "medium",
+            "evidence_fields": [],
+            "auto_apply": False,
+        }
+
+    evaluate(solver=spy_solver, cases=[load_cases()[0]])
+    assert "expected" not in seen
+
+
 def test_perfect_prediction_scores_one() -> None:
     case = load_cases()[0]
     expected = case["expected"]
