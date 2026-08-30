@@ -1,4 +1,4 @@
-"""Bounded agentic triage workflow with independent verification."""
+"""Bounded agentic survey-quality workflow with deterministic action mapping."""
 
 from __future__ import annotations
 
@@ -10,12 +10,12 @@ from pathlib import Path
 from typing import Any
 
 from .contracts import (
-    ACTION_TO_VERDICT,
     PRIORITIES,
+    Assessment,
     ContractError,
     Recommendation,
-    parse_recommendation,
-    parse_verification,
+    parse_assessment,
+    parse_assessment_verification,
 )
 from .prompts import TRIAGE_SYSTEM, VERIFY_SYSTEM
 from .providers import ChatProvider
@@ -49,80 +49,95 @@ def _available_fields(case: dict[str, Any]) -> set[str]:
 
 
 def _trigger_fields(case: dict[str, Any]) -> tuple[str, ...]:
-    finding = case.get("finding", {})
-    fields = finding.get("fields", [])
+    fields = case.get("finding", {}).get("fields", [])
     if not isinstance(fields, list):
         return ()
     return tuple(field for field in fields if isinstance(field, str) and field)
 
 
-def _normalise_priority(
+def _normalise_assessment_evidence(
     case: dict[str, Any],
-    recommendation: Recommendation,
+    assessment: Assessment,
+) -> Assessment:
+    evidence_fields = tuple(
+        dict.fromkeys((*_trigger_fields(case), *assessment.evidence_fields))
+    )
+    if evidence_fields == assessment.evidence_fields:
+        return assessment
+
+    return Assessment(
+        context_resolves_flag=assessment.context_resolves_flag,
+        flag_supported_by_record=assessment.flag_supported_by_record,
+        needs_additional_review=assessment.needs_additional_review,
+        specific_correction_supported=assessment.specific_correction_supported,
+        evidence_fields=evidence_fields,
+        rationale=assessment.rationale,
+        confidence=assessment.confidence,
+        proposed_value=assessment.proposed_value,
+    )
+
+
+def _safe_assessment(case: dict[str, Any], reason: str) -> Assessment:
+    trigger_fields = list(_trigger_fields(case))
+    remaining = sorted(_available_fields(case) - set(trigger_fields))
+    fields = tuple((trigger_fields + remaining)[:3]) or ("unavailable_evidence",)
+    return Assessment(
+        context_resolves_flag=False,
+        flag_supported_by_record=None,
+        needs_additional_review=True,
+        specific_correction_supported=False,
+        evidence_fields=fields,
+        rationale=f"Additional review required because agent output was unsafe: {reason}",
+        confidence=0.0,
+        proposed_value=None,
+    )
+
+
+def _validate_assessment(case: dict[str, Any], assessment: Assessment) -> None:
+    unknown = set(assessment.evidence_fields) - _available_fields(case)
+    if unknown:
+        raise ContractError(f"Assessment cites unavailable fields: {sorted(unknown)}")
+
+    if (
+        assessment.specific_correction_supported
+        and len(assessment.evidence_fields) < 2
+    ):
+        raise ContractError(
+            "Supported corrections require at least two evidence fields."
+        )
+
+
+def _recommendation_from_assessment(
+    case: dict[str, Any],
+    assessment: Assessment,
 ) -> Recommendation:
-    """Apply the operational priority policy from verdict and rule severity."""
+    if assessment.specific_correction_supported:
+        action = "propose_correction"
+    elif assessment.context_resolves_flag:
+        action = "reject_finding"
+    elif assessment.needs_additional_review:
+        action = "defer_review"
+    elif assessment.flag_supported_by_record is True:
+        action = "accept_finding"
+    else:
+        action = "defer_review"
+
     severity = case.get("finding", {}).get("severity")
-    if recommendation.action == "reject_finding":
+    if action == "reject_finding":
         priority = "low"
     elif severity in PRIORITIES:
         priority = severity
     else:
-        priority = recommendation.priority
-
-    if priority == recommendation.priority:
-        return recommendation
+        priority = "medium"
 
     return Recommendation(
-        action=recommendation.action,
+        action=action,
         priority=priority,
-        evidence_fields=recommendation.evidence_fields,
-        rationale=recommendation.rationale,
-        confidence=recommendation.confidence,
-        proposed_value=recommendation.proposed_value,
+        evidence_fields=assessment.evidence_fields,
+        rationale=assessment.rationale,
+        confidence=assessment.confidence,
+        proposed_value=assessment.proposed_value,
     )
-
-
-def _normalise_evidence(
-    case: dict[str, Any],
-    recommendation: Recommendation,
-) -> Recommendation:
-    """Ensure every triggering field remains visible in the audit evidence bundle."""
-    evidence_fields = tuple(
-        dict.fromkeys((*_trigger_fields(case), *recommendation.evidence_fields))
-    )
-    if evidence_fields == recommendation.evidence_fields:
-        return recommendation
-
-    return Recommendation(
-        action=recommendation.action,
-        priority=recommendation.priority,
-        evidence_fields=evidence_fields,
-        rationale=recommendation.rationale,
-        confidence=recommendation.confidence,
-        proposed_value=recommendation.proposed_value,
-    )
-
-
-def _safe_fallback(case: dict[str, Any], reason: str) -> Recommendation:
-    trigger_fields = list(_trigger_fields(case))
-    remaining = sorted(_available_fields(case) - set(trigger_fields))
-    fields = tuple((trigger_fields + remaining)[:3]) or ("unavailable_evidence",)
-    return Recommendation(
-        action="defer_review",
-        priority="medium",
-        evidence_fields=fields,
-        rationale=f"Deferred because the agent output could not be safely verified: {reason}",
-        confidence=0.0,
-    )
-
-
-def _validate_evidence(case: dict[str, Any], recommendation: Recommendation) -> None:
-    unknown = set(recommendation.evidence_fields) - _available_fields(case)
-    if unknown:
-        raise ContractError(f"Recommendation cites unavailable fields: {sorted(unknown)}")
-
-    if recommendation.action == "propose_correction" and len(recommendation.evidence_fields) < 2:
-        raise ContractError("Correction proposals require at least two supporting evidence fields.")
 
 
 def run_workflow(case: dict[str, Any], provider: ChatProvider) -> WorkflowResult:
@@ -139,14 +154,14 @@ def run_workflow(case: dict[str, Any], provider: ChatProvider) -> WorkflowResult
     triage_seconds = time.perf_counter() - triage_start
 
     try:
-        candidate = _normalise_priority(
+        candidate = _normalise_assessment_evidence(
             case,
-            _normalise_evidence(case, parse_recommendation(triage_raw)),
+            parse_assessment(triage_raw),
         )
-        _validate_evidence(case, candidate)
+        _validate_assessment(case, candidate)
         triage_error = None
     except ContractError as exc:
-        candidate = _safe_fallback(case, str(exc))
+        candidate = _safe_assessment(case, str(exc))
         triage_error = str(exc)
 
     trajectory["agents"].append(
@@ -155,22 +170,14 @@ def run_workflow(case: dict[str, Any], provider: ChatProvider) -> WorkflowResult
             "system_instruction": TRIAGE_SYSTEM,
             "user_input": user_payload,
             "raw_response": triage_raw,
-            "parsed": {
-                **candidate.to_dict(),
-                "verdict": ACTION_TO_VERDICT[candidate.action],
-            },
+            "parsed": candidate.to_dict(),
             "contract_error": triage_error,
             "runtime_seconds": triage_seconds,
         }
     )
 
-    candidate_for_verifier = candidate.to_dict()
-    candidate_for_verifier.pop("action", None)
-    candidate_for_verifier.pop("auto_apply", None)
-    candidate_for_verifier["verdict"] = ACTION_TO_VERDICT[candidate.action]
-
     verification_payload = json.dumps(
-        {"case": case, "proposed_recommendation": candidate_for_verifier},
+        {"case": case, "proposed_assessment": candidate.to_dict()},
         sort_keys=True,
         ensure_ascii=False,
     )
@@ -180,21 +187,26 @@ def run_workflow(case: dict[str, Any], provider: ChatProvider) -> WorkflowResult
     verify_seconds = time.perf_counter() - verify_start
 
     try:
-        verification = parse_verification(verify_raw)
-        final = verification.replacement if verification.replacement is not None else candidate
+        verification = parse_assessment_verification(verify_raw)
+        final_assessment = (
+            verification.replacement
+            if verification.replacement is not None
+            else candidate
+        )
         if not verification.approved and verification.replacement is None:
-            final = _safe_fallback(
+            final_assessment = _safe_assessment(
                 case,
                 "; ".join(verification.issues) or "verification rejected",
             )
-        final = _normalise_priority(case, _normalise_evidence(case, final))
-        _validate_evidence(case, final)
+        final_assessment = _normalise_assessment_evidence(case, final_assessment)
+        _validate_assessment(case, final_assessment)
         verify_error = None
     except ContractError as exc:
-        final = _safe_fallback(case, str(exc))
+        final_assessment = _safe_assessment(case, str(exc))
         verification = None
         verify_error = str(exc)
 
+    final = _recommendation_from_assessment(case, final_assessment)
     final_dict = final.to_dict()
     final_dict["case_id"] = case.get("id")
     final_dict["auto_apply"] = False
@@ -212,16 +224,14 @@ def run_workflow(case: dict[str, Any], provider: ChatProvider) -> WorkflowResult
                 "issues": list(verification.issues),
                 "replacement": None
                 if verification.replacement is None
-                else {
-                    **verification.replacement.to_dict(),
-                    "verdict": ACTION_TO_VERDICT[verification.replacement.action],
-                },
+                else verification.replacement.to_dict(),
             },
             "contract_error": verify_error,
             "runtime_seconds": verify_seconds,
         }
     )
 
+    trajectory["final_assessment"] = final_assessment.to_dict()
     trajectory["final_recommendation"] = final_dict
     trajectory["human_checkpoint_required"] = True
     return WorkflowResult(final_dict, trajectory)
