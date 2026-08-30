@@ -1,19 +1,33 @@
 # Agent trajectory evidence
 
-Representative agent trajectories are a required hackathon deliverable.
+Representative final trajectories are tracked here for the hackathon submission.
 
-For each agent used in the final workflow, retain a readable record containing:
+The measured evaluation runner writes complete trajectories under ignored `artifacts/` paths. After the final Iteration-8 evaluation, export representative traces without reconstructing or editing them:
 
-1. agent name and exact instructions;
-2. input case identifier;
-3. tool or context requests;
-4. tool responses;
-5. intermediate structured output;
-6. verifier feedback;
-7. retries, if any;
-8. human checkpoint, if any; and
-9. final recommendation.
+```bash
+python scripts/export_final_trajectories.py
+```
 
-Do not reconstruct trajectories retrospectively. Capture them during evaluated runs.
+The default export selects:
 
-No agent trajectories exist yet because Phase 0 contains only the simple scripted baseline.
+- **SG-003** — authorised-revisit exception where the deterministic policy overrode the local model;
+- **SG-007** — unresolved GPS anomaly where the model and policy aligned.
+
+Each exported JSON contains both final agents:
+
+1. **Triage Agent** — exact system instruction, user input, raw response, parsed structured assessment, contract status and runtime;
+2. **Verification Agent** — exact instruction, verification payload, raw response, parsed result, contract status and runtime.
+
+The same trajectory also records:
+
+- input SHA-256;
+- deterministic `policy_tool` output;
+- `model_final_assessment`;
+- `policy_override_applied`;
+- final assessment;
+- final human-review recommendation; and
+- `human_checkpoint_required=true`.
+
+The exporter writes `trajectories/representative/manifest.json` with source/export SHA-256 values so the tracked copies can be checked against the measured local artefacts.
+
+Do not hand-edit the exported trajectory files. Re-export them from the measured run if necessary.
