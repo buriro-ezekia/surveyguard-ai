@@ -27,7 +27,7 @@ class OpenAICompatibleProvider:
     temperature: float = 0.0
 
     @classmethod
-    def from_env(cls) -> "OpenAICompatibleProvider":
+    def from_env(cls) -> OpenAICompatibleProvider:
         return cls(
             base_url=os.getenv("SURVEYGUARD_BASE_URL", "http://localhost:11434/v1"),
             model=os.getenv("SURVEYGUARD_MODEL", "qwen2.5:3b"),
