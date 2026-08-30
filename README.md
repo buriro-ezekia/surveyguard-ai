@@ -158,6 +158,20 @@ trajectories/
   README.md
 ```
 
+## Submission package
+
+Judge-facing materials:
+
+- [Final submission narrative](docs/SUBMISSION.md)
+- [≤5-minute video script and storyboard](docs/VIDEO_SCRIPT.md)
+- [Rubric-to-evidence map](docs/RUBRIC_EVIDENCE.md)
+- [End-to-end supervisor demo](docs/DEMO.md)
+- [Improvement changelog](docs/IMPROVEMENT_CHANGELOG.md)
+- [Final submission checklist](docs/FINAL_CHECKLIST.md)
+- [Third-party components and licences](docs/THIRD_PARTY.md)
+- [Representative final trajectories](trajectories/README.md)
+- [Machine-readable final-results export](results/README.md)
+
 ## Safety boundary
 
 - No substantive correction is auto-applied.
