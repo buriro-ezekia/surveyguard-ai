@@ -34,11 +34,13 @@ The model does not choose the externally scored `accept_finding` / `reject_findi
 - `needs_review` -> `defer_review`;
 - `correction_supported` -> `propose_correction`.
 
-This translation changes only the model-facing contract. The frozen evaluation actions, cases and QARS definition remain unchanged.
+This translation changes only the model-facing contract. The frozen evaluation actions, cases and QARS definition remain unchanged. Agent-to-agent hand-offs also stay in verdict space; external action labels are introduced only at the deterministic workflow boundary.
 
 ## 5. Priorities
 
 `critical`, `high`, `medium`, `low`.
+
+Priority is assigned deterministically after each model recommendation: `valid_exception` maps to `low`; otherwise the final priority follows the validation finding's supplied severity when it is one of the supported priority levels. The model's priority field is therefore advisory and cannot override the operational rule metadata.
 
 ## 6. Safety invariants
 
