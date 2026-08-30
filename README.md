@@ -47,7 +47,7 @@ QARS =
 + 15% safety / no automatic substantive correction
 ```
 
-The baseline and final solution will use the same cases and scorer. The corpus includes contextual exceptions, ambiguous cases and one correction-proposal case so that success cannot be achieved by blindly accepting every validation flag.
+Gold labels remain in the evaluation file for scoring but are stripped before a baseline or agent sees each case. The agent workflow independently rejects any input that still contains the `expected` object.
 
 See [`docs/EVALUATION.md`](docs/EVALUATION.md).
 
@@ -70,40 +70,78 @@ qa_resolution_score=0.619643
 
 This result is the starting point, not the target.
 
-## Planned agentic improvement
+## Iteration 1: bounded agentic workflow
 
-The advanced workflow will be added only after the baseline and evaluation contract are frozen. The current design hypothesis is:
+The first advanced implementation is deliberately small:
 
 ```text
-Validation finding
-      ↓
-Context agent
-      ↓
-Decision agent
-      ↓
-Verification agent
-      ↓
-Deterministic safety gate
-      ↓
+Validation finding + bounded context
+              ↓
+         Triage Agent
+              ↓
+      Verification Agent
+              ↓
+   Deterministic safety gate
+              ↓
 Human-review recommendation
 ```
 
-The design will only keep components that improve the fixed evaluation. Purposeful changes will be recorded in an improvement changelog; unsuccessful experiments will remain documented rather than being hidden.
+The **Triage Agent** distinguishes genuine findings from contextual exceptions and must return a structured recommendation.
+
+The **Verification Agent** independently checks whether the proposal ignored an exception, invented evidence, proposed an unsupported correction or overstated confidence.
+
+Application code then enforces the safety boundary. Gold labels cannot enter the workflow, cited evidence must exist in the case, unsafe correction proposals are rejected and `auto_apply` is always false.
+
+See [`docs/AGENT_DESIGN.md`](docs/AGENT_DESIGN.md).
+
+### Provider boundary
+
+The workflow uses a small OpenAI-compatible HTTP adapter. Its default local configuration targets:
+
+```text
+http://localhost:11434/v1
+qwen2.5:3b
+temperature=0
+```
+
+This makes a local Ollama-style run possible without per-call API charges. A compatible hosted provider can also be used through environment variables.
+
+The Iteration 1 architecture is implemented, but **no model-performance result is claimed yet**. The changelog will only record an Iteration 1 score after a complete live model run succeeds on all fixed cases.
+
+## Run the advanced evaluation
+
+After configuring the model endpoint:
+
+```bash
+python -m src.surveyguard.agent_eval
+```
+
+The run writes the measured result and one trajectory per evaluation case under ignored `artifacts/` paths.
+
+See [`docs/REPRODUCE.md`](docs/REPRODUCE.md) for the clean-environment procedure.
 
 ## Repository structure
 
 ```text
 src/surveyguard/
-  baseline.py       simple deterministic baseline
-  evaluation.py     fixed QARS scorer and evaluation runner
+  baseline.py       frozen scripted baseline
+  evaluation.py     QARS scorer and gold-label isolation
+  contracts.py      strict model-output contracts
+  prompts.py        exact Triage and Verification instructions
+  providers.py      OpenAI-compatible provider adapter
+  workflow.py       two-agent workflow and safety gate
+  agent_eval.py     measured agent evaluation runner
 evals/
-  cases.json        synthetic fixed evaluation corpus
+  cases.json        14 fixed synthetic cases
 tests/
   test_baseline.py
   test_evaluation.py
+  test_agent_workflow.py
 docs/
   SPEC.md
   EVALUATION.md
+  AGENT_DESIGN.md
+  REPRODUCE.md
   PREEXISTING.md
 trajectories/
   README.md
@@ -120,16 +158,17 @@ pytest -q
 python -m src.surveyguard.evaluation
 ```
 
-No API key, model download or external service is needed for the baseline.
+No API key, model download or external service is needed for the baseline and unit tests.
 
 ## Safety boundary
 
 SurveyGuard AI is decision support, not an autonomous data-cleaning system.
 
 - Raw observations are never silently overwritten.
-- A correction may be proposed only when the evidence supports a specific value.
+- A correction may be proposed only when evidence supports a specific value.
 - Every substantive decision remains subject to human review.
 - Synthetic data are used for the public evaluation corpus.
+- Gold labels are withheld from agents.
 - Credentials and private survey data must not be committed.
 
 ## Improvement changelog
@@ -137,8 +176,8 @@ SurveyGuard AI is decision support, not an autonomous data-cleaning system.
 | Stage | What changed | Evidence | Decision |
 |---|---|---|---|
 | Baseline | Rule-type and severity mapping; first triggering field cited | QARS **0.619643** on 14 fixed synthetic cases | Frozen as the comparison baseline |
-| Iteration 1 | Pending | Pending | Pending |
-| Iteration 2 | Pending | Pending | Pending |
+| Evaluation hardening | Removed gold `expected` labels from every solver input and added an independent workflow rejection guard | Baseline remains **0.619643** | Kept; prevents evaluation leakage |
+| Iteration 1 | Added Triage Agent, independent Verification Agent, strict structured-output contracts, evidence validation and deterministic no-auto-apply gate | **Live model evaluation pending** | Architecture implemented; score not yet claimed |
 | Final | Pending | Pending | Pending |
 
 ## Main failure mode so far
