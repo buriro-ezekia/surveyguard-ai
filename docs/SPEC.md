@@ -50,13 +50,13 @@ This represents a basic scripted triage approach without contextual reasoning.
 
 ## 8. Advanced-solution hypothesis
 
-The working hypothesis is that three bounded stages will outperform the baseline:
+The working hypothesis is that two bounded agents plus a deterministic gate will outperform the baseline:
 
-1. **Context agent** — selects relevant evidence from the finding and case context.
-2. **Decision agent** — recommends action and priority from the selected evidence.
-3. **Verification agent** — checks the recommendation against evidence sufficiency, exceptions and safety invariants.
+1. **Triage agent** — reads the finding and bounded case context, then recommends action, priority and supporting evidence.
+2. **Verification agent** — independently checks contextual exceptions, evidence sufficiency and safety, replacing a recommendation when necessary.
+3. **Deterministic safety gate** — rejects unavailable evidence, malformed outputs and unsupported correction proposals.
 
-A deterministic safety gate will reject outputs that attempt automatic modification or unsupported correction.
+The architecture remains intentionally small: context selection and decision-making stay in one triage stage unless measured evidence shows that a separate context agent is necessary.
 
 The architecture is a hypothesis, not a commitment. Components will be retained only if the fixed evaluation shows a meaningful improvement.
 
@@ -65,7 +65,7 @@ The architecture is a hypothesis, not a commitment. Components will be retained 
 The final solution should:
 
 - run on all 14 fixed cases without crashing;
-- improve QARS over the frozen 0.619643 baseline;
+- achieve a full-corpus QARS of at least **0.85** (defined before the first comparable 14-case advanced evaluation), materially above the frozen 0.619643 baseline;
 - retain a no-auto-apply safety score of 1.0;
 - produce structured, inspectable recommendations;
 - preserve at least one explicit abstention/defer pathway;
