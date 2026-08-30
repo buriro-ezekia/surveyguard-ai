@@ -3,6 +3,7 @@
 import json
 
 from src.surveyguard.contracts import parse_recommendation, parse_verification
+from src.surveyguard.prompts import TRIAGE_SYSTEM, VERIFY_SYSTEM
 from src.surveyguard.providers import ScriptedProvider
 from src.surveyguard.workflow import run_workflow
 
@@ -398,3 +399,10 @@ def test_verifier_receives_verdict_not_external_action_label() -> None:
 
     assert proposed["verdict"] == "confirmed_issue"
     assert "action" not in proposed
+
+
+def test_agent_instructions_treat_context_as_observed_fact() -> None:
+    assert "observed fact" in TRIAGE_SYSTEM
+    assert "Never demand redundant confirmation" in TRIAGE_SYSTEM
+    assert "observed fact" in VERIFY_SYSTEM
+    assert "questionnaire_note" in VERIFY_SYSTEM
