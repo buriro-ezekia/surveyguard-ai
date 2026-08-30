@@ -110,11 +110,23 @@ def parse_verification(text: str) -> Verification:
 
     if not isinstance(approved, bool):
         raise ContractError("approved must be boolean.")
-    if not isinstance(issues, list) or not all(isinstance(x, str) for x in issues):
-        raise ContractError("issues must be a list of strings.")
+    if not isinstance(issues, list):
+        raise ContractError("issues must be a list.")
+
+    normalised_issues: list[str] = []
+    for issue in issues:
+        if isinstance(issue, str) and issue.strip():
+            normalised_issues.append(issue.strip())
+            continue
+        if isinstance(issue, dict):
+            message = issue.get("rationale") or issue.get("message") or issue.get("title")
+            if isinstance(message, str) and message.strip():
+                normalised_issues.append(message.strip())
+                continue
+        raise ContractError("each verification issue must be a string or an object with text.")
 
     replacement = None
     if data.get("replacement") is not None:
         replacement = parse_recommendation(json.dumps(data["replacement"]))
 
-    return Verification(approved, tuple(issues), replacement)
+    return Verification(approved, tuple(normalised_issues), replacement)
