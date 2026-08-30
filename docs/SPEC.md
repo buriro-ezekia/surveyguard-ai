@@ -25,6 +25,17 @@ Given one validation finding plus bounded contextual evidence, produce a review 
 - `defer_review`: evidence is insufficient or the case requires additional human verification.
 - `propose_correction`: a specific correction is supported by authoritative evidence, but must still be approved by a human.
 
+### Model-facing verdict contract
+
+The model does not choose the externally scored `accept_finding` / `reject_finding` labels directly because those names proved semantically ambiguous in the first full live evaluation. It chooses one plain-language verdict, which is mapped deterministically:
+
+- `confirmed_issue` -> `accept_finding` (keep the flag);
+- `valid_exception` -> `reject_finding` (dismiss the flag);
+- `needs_review` -> `defer_review`;
+- `correction_supported` -> `propose_correction`.
+
+This translation changes only the model-facing contract. The frozen evaluation actions, cases and QARS definition remain unchanged.
+
 ## 5. Priorities
 
 `critical`, `high`, `medium`, `low`.
