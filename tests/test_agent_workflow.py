@@ -125,3 +125,11 @@ def test_gold_labels_are_rejected_by_workflow() -> None:
         assert "Gold evaluation labels" in str(exc)
     else:
         raise AssertionError("Expected workflow to reject gold labels")
+
+
+def test_single_case_selector_is_explicit() -> None:
+    from src.surveyguard.agent_eval import _select_cases
+
+    cases = [{"id": "A"}, {"id": "B"}]
+    assert _select_cases(cases, "B") == [{"id": "B"}]
+    assert _select_cases(cases, None) == cases
