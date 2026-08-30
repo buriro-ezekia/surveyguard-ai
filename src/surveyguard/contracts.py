@@ -39,9 +39,9 @@ class Recommendation:
 
 def _json_object(text: str) -> dict[str, Any]:
     cleaned = text.strip()
-    if cleaned.startswith("~~~") or cleaned.startswith("```"):
+    if cleaned.startswith(("~~~", "```")):
         lines = cleaned.splitlines()
-        if lines and (lines[0].startswith("~~~") or lines[0].startswith("```")):
+        if lines and lines[0].startswith(("~~~", "```")):
             lines = lines[1:]
         if lines and lines[-1].strip() in {"~~~", "```"}:
             lines = lines[:-1]
