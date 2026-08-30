@@ -23,6 +23,14 @@ def load_cases(path: Path = CASES_PATH) -> list[dict[str, Any]]:
     return json.loads(path.read_text(encoding="utf-8"))
 
 
+def solver_view(case: dict[str, Any]) -> dict[str, Any]:
+    """Return the case fields available to a baseline or agent.
+
+    Gold labels are deliberately withheld to prevent evaluation leakage.
+    """
+    return {key: value for key, value in case.items() if key != "expected"}
+
+
 def score_case(case: dict[str, Any], prediction: dict[str, Any]) -> dict[str, float]:
     expected = case["expected"]
 
@@ -57,7 +65,7 @@ def evaluate(
     cases = load_cases() if cases is None else cases
     rows = []
     for case in cases:
-        prediction = solver(case)
+        prediction = solver(solver_view(case))
         scores = score_case(case, prediction)
         rows.append(
             {
