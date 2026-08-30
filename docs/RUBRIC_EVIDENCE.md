@@ -6,7 +6,7 @@ Use this document as the final judge-readiness checklist.
 |---|---:|---|---|
 | Problem and user value | 15 | README; `docs/SUBMISSION.md`; `docs/SPEC.md` | Explain the post-validation supervision bottleneck and why false positives/unsafe corrections matter |
 | Agent solution and engineering | 30 | `src/surveyguard/policy.py`; `workflow.py`; `prompts.py`; `contracts.py`; `docs/AGENT_DESIGN.md` | Emphasise purposeful hybrid design, bounded agents, deterministic policy and safety boundary |
-| End-to-end quality | 20 | representative SG-003 and SG-007 trajectories; final structured recommendations | Demonstrate one override and one aligned case from input through both agents to human checkpoint |
+| End-to-end quality | 20 | `scripts/review_case.py`; `examples/field_review_case.json`; `docs/DEMO.md`; representative SG-003 and SG-007 trajectories | Run the supervisor CLI, then show one override and one aligned trace through the human checkpoint |
 | Measured improvement | 15 | `docs/EVALUATION.md`; `docs/IMPROVEMENT_CHANGELOG.md`; final evaluation artefact | Baseline 0.619643 → final 1.000000 on same 14 cases; include failed full runs |
 | Reproducibility | 15 | `docs/REPRODUCE.md`; tests; `.env.example`; trajectory manifest; export scripts | Show exact commands, model/runtime, no private data and reproducible baseline |
 | Hot take / insights | 5 | README and submission narrative | Stable policy belongs in inspectable code; agents are best used around it |
