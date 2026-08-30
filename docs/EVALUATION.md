@@ -27,15 +27,23 @@ The intended user does not only need a classification. A useful triage recommend
 
 `evals/cases.json` contains 14 synthetic cases spanning range violations, skip-logic contradictions, contextual exceptions, authorised revisits, cross-field consistency, consent, interview-duration exceptions, GPS anomalies, unit interpretation, enumerator-level patterns, date ordering and missing required values.
 
-The baseline and every later iteration must use exactly the same corpus and scoring code unless a scoring defect is discovered. Any such defect must be documented before rerunning comparisons.
+The baseline and every later iteration use exactly the same corpus and scoring code unless a scoring defect is discovered. Any defect must be documented before rerunning comparisons.
+
+## Gold-label isolation
+
+The JSON file stores expected outcomes so the deterministic scorer can calculate QARS. Those gold labels are **removed before any baseline or agent solver receives a case**.
+
+`solver_view()` strips the `expected` object, and `run_workflow()` independently rejects any case that still contains `expected`. Automated tests enforce this boundary.
+
+This safeguard was added before any advanced model evaluation. It did not change the frozen baseline score.
 
 ## Challenging cases
 
 The corpus deliberately includes cases where a validation rule is triggered but contextual evidence changes the correct review decision. These cases test whether the system can distinguish a flag from a confirmed data error.
 
-## Secondary measures to add before final submission
+## Secondary measures
 
-The final evaluated run will also record wall-clock runtime per case, model/API cost where applicable, agent/model calls, verification retries and human-review rate. QARS remains the primary metric.
+The agent evaluation runner records total wall-clock runtime and provider/model identity. Before final submission the evaluated run will also report approximate model cost where applicable, calls per case, verification retries and the human-review rate. QARS remains the primary metric.
 
 ## Frozen baseline result
 
@@ -49,3 +57,13 @@ Reproduce it with:
 ```bash
 python -m src.surveyguard.evaluation
 ```
+
+## Agent evaluation
+
+The advanced workflow is measured with:
+
+```bash
+python -m src.surveyguard.agent_eval
+```
+
+The runner stores full results under `artifacts/` and representative raw trajectories for the Triage and Verification agents. Scripted test-provider responses are never used for a measured-performance claim.
