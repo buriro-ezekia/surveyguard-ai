@@ -259,3 +259,60 @@ def test_trigger_fields_are_added_to_agent_evidence() -> None:
         "household_id",
         "revisit_authorised",
     ]
+
+
+def test_plain_verdict_maps_to_external_action() -> None:
+    recommendation = parse_recommendation(
+        json.dumps(
+            {
+                "verdict": "confirmed_issue",
+                "priority": "high",
+                "evidence_fields": ["household_id"],
+                "rationale": "The supplied evidence confirms the flag.",
+                "confidence": 0.9,
+                "proposed_value": None,
+            }
+        )
+    )
+
+    assert recommendation.action == "accept_finding"
+
+
+def test_verdict_overrides_conflicting_action_label() -> None:
+    recommendation = parse_recommendation(
+        json.dumps(
+            {
+                "verdict": "valid_exception",
+                "action": "accept_finding",
+                "priority": "low",
+                "evidence_fields": ["household_id"],
+                "rationale": "The record is a valid exception.",
+                "confidence": 0.9,
+                "proposed_value": None,
+            }
+        )
+    )
+
+    assert recommendation.action == "reject_finding"
+
+
+def test_verifier_replacement_can_use_plain_verdict() -> None:
+    verification = parse_verification(
+        json.dumps(
+            {
+                "approved": False,
+                "issues": ["The action conflicts with the evidence."],
+                "replacement": {
+                    "verdict": "needs_review",
+                    "priority": "medium",
+                    "evidence_fields": ["household_id"],
+                    "rationale": "Evidence remains ambiguous.",
+                    "confidence": 0.4,
+                    "proposed_value": None,
+                },
+            }
+        )
+    )
+
+    assert verification.replacement is not None
+    assert verification.replacement.action == "defer_review"
