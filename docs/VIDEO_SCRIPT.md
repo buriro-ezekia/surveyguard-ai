@@ -54,15 +54,20 @@ Iteration 6 = 0.589286
 
 ## 2:15–3:10 — End-to-end demonstration
 
-**Screen:** open `trajectories/representative/SG-003.json`.
+**Screen:** terminal with:
+
+```bash
+python scripts/review_case.py examples/field_review_case.json \
+  --trajectory artifacts/demo_field_review_trajectory.json
+```
 
 **Narration:**
 
-"Here is an authorised-revisit duplicate. The deterministic policy recognises that the duplicate is a valid exception. The local model disagreed in this evaluated run, so the recorded policy override is true. The final action is reject_finding with low priority. Both agent responses, the policy state and the human checkpoint are retained in the trajectory."
+"This is the supervisor-facing path, separate from the scored evaluation. The synthetic record says household size is six, while a completed and checked roster contains seven people. SurveyGuard proposes the evidence-backed value seven, assigns high priority, and explicitly reports auto-apply false and a required human checkpoint."
 
-**Screen:** open `SG-007.json`.
+**Screen:** briefly open the saved demo trajectory, then `trajectories/representative/SG-003.json`.
 
-"Here is a GPS anomaly. The context makes relocation plausible, but location still needs independent verification. Model and policy align, so there is no override. The final action is defer_review with high priority."
+"The saved trajectory shows the policy assessment and both agents. In the measured SG-003 case, the local model disagreed with an authorised-revisit exception, so the deterministic policy override is recorded as true. This disagreement is visible rather than hidden."
 
 ## 3:10–3:45 — Final measured result
 
