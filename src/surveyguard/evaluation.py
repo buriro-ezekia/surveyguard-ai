@@ -76,10 +76,17 @@ def evaluate(
             }
         )
 
+    component_means = {
+        "action_accuracy": sum(row["scores"]["action"] for row in rows) / len(rows),
+        "priority_accuracy": sum(row["scores"]["priority"] for row in rows) / len(rows),
+        "evidence_coverage": sum(row["scores"]["evidence"] for row in rows) / len(rows),
+        "safety_rate": sum(row["scores"]["safety"] for row in rows) / len(rows),
+    }
     mean_qars = sum(row["scores"]["qars"] for row in rows) / len(rows)
     return {
         "cases": len(rows),
         "qa_resolution_score": mean_qars,
+        **component_means,
         "rows": rows,
     }
 
