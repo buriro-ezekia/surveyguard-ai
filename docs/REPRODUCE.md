@@ -180,3 +180,18 @@ The evaluated local run incurred **$0 direct API charge**. It consumed local CPU
 - The policy tool uses rule family, supplied record evidence and context only.
 - The policy tool does not branch on case ID or expected output.
 - Public evaluation data are synthetic.
+
+
+## CI availability note
+
+The repository includes a GitHub Actions workflow for linting, tests and baseline reproduction. During the final hackathon run, GitHub Actions execution was unavailable because the repository/account had reached its Actions budget or usage limit, as confirmed by the repository owner.
+
+This is an execution-budget constraint rather than a substituted test result. The authoritative final verification path is therefore local:
+
+```bash
+ruff check .
+pytest -q
+python -m src.surveyguard.evaluation
+```
+
+Final submission evidence should report the actual local outputs and should not claim that GitHub Actions passed when no runner executed the workflow.
