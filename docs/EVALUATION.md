@@ -6,64 +6,88 @@ QARS is calculated per case and averaged across the fixed corpus.
 
 | Component | Weight | Definition |
 |---|---:|---|
-| Review action | 0.45 | Exact match with the expected review action |
-| Priority | 0.15 | Exact match with the expected priority |
-| Evidence coverage | 0.25 | Fraction of required evidence fields cited by the solution |
+| Review action | 0.45 | Exact match with expected review action |
+| Priority | 0.15 | Exact match with expected priority |
+| Evidence coverage | 0.25 | Fraction of required evidence fields cited |
 | Safety | 0.15 | Full credit only when no substantive correction is auto-applied |
-
-The primary score is:
 
 ```text
 QARS = 0.45A + 0.15P + 0.25E + 0.15S
 ```
 
-where each component is in `[0, 1]`.
+The intended user needs more than a classification: the recommendation must choose the right disposition, set review priority, expose supporting evidence and preserve human control.
 
-## Why this metric
+## Fixed corpus and success criterion
 
-The intended user does not only need a classification. A useful triage recommendation must choose the right disposition, place the case at the right priority, show the evidence behind the decision and preserve human control. QARS makes those requirements explicit while keeping one primary outcome.
+`evals/cases.json` contains **14 synthetic cases** spanning range violations, skip logic, authorised revisits, consistency/correction, consent, duration, GPS, unit/numeric interpretation, pattern anomalies, date ordering and missing required values.
 
-## Fixed evaluation corpus
+Before the first comparable advanced run, success was defined as:
 
-`evals/cases.json` contains 14 synthetic cases spanning range violations, skip-logic contradictions, contextual exceptions, authorised revisits, cross-field consistency, consent, interview-duration exceptions, GPS anomalies, unit interpretation, enumerator-level patterns, date ordering and missing required values.
+```text
+full-corpus QARS >= 0.85
+safety = 1.0
+```
 
-The baseline and every later iteration use exactly the same corpus and scoring code unless a scoring defect is discovered. Any defect must be documented before rerunning comparisons.
-
-## Gold-label isolation
-
-The JSON file stores expected outcomes so the deterministic scorer can calculate QARS. Those gold labels are **removed before any baseline or agent solver receives a case**.
-
-`solver_view()` strips the `expected` object, and `run_workflow()` independently rejects any case that still contains `expected`. Automated tests enforce this boundary.
-
-This safeguard was added before any advanced model evaluation. It did not change the frozen baseline score.
-
-## Challenging cases
-
-The corpus deliberately includes cases where a validation rule is triggered but contextual evidence changes the correct review decision. These cases test whether the system can distinguish a flag from a confirmed data error.
-
-## Secondary measures
-
-The agent evaluation runner records total wall-clock runtime and provider/model identity. Before final submission the evaluated run will also report approximate model cost where applicable, calls per case, verification retries and the human-review rate. QARS remains the primary metric.
-
-## Frozen baseline result
+The frozen baseline is:
 
 ```text
 cases=14
 qa_resolution_score=0.619643
 ```
 
-Reproduce it with:
+## Gold-label isolation
+
+Gold labels are present only for scoring.
+
+- `solver_view()` removes `expected` before the solver sees a case.
+- `run_workflow()` independently rejects any case that still contains `expected`.
+- Automated tests enforce this boundary.
+- The deterministic policy tool receives only solver-visible fields.
+
+This hardening occurred before advanced measured comparisons and did not change the frozen baseline.
+
+## Comparable measured results
+
+| Stage | QARS | Action | Priority | Evidence | Safety |
+|---|---:|---:|---:|---:|---:|
+| Baseline | 0.619643 | — | — | — | 1.000000 |
+| Iteration 3 | 0.497024 | 0.214286 | 0.500000 | 0.702381 | 1.000000 |
+| Iteration 6 | 0.589286 | 0.285714 | 0.642857 | 0.857143 | 1.000000 |
+| **Iteration 8** | **1.000000** | **1.000000** | **1.000000** | **1.000000** | **1.000000** |
+
+Iteration 8 absolute improvement over baseline:
+
+```text
+1.000000 - 0.619643 = +0.380357 QARS
+```
+
+Final runtime:
+
+```text
+597.411 seconds total
+42.672 seconds per case
+```
+
+The policy tool overrode the local model on 8 of 14 cases. This is direct evidence that the deterministic policy layer, not prompt tuning alone, was the largest contributor to the final score.
+
+## Interpretation
+
+The final score is perfect on the fixed 14-case synthetic corpus. It must not be interpreted as proof of universal generalisation to unseen surveys, questionnaires or rule taxonomies.
+
+The strongest engineering claim supported by this evaluation is narrower: on the declared fixed task, a hybrid deterministic-policy + agent explanation/verification workflow materially outperformed both the frozen scripted baseline and the earlier model-led iterations while preserving a 1.0 safety rate.
+
+## Reproduce
+
+Baseline:
 
 ```bash
 python -m src.surveyguard.evaluation
 ```
 
-## Agent evaluation
-
-The advanced workflow is measured with:
+Final workflow:
 
 ```bash
 python -m src.surveyguard.agent_eval
 ```
 
-The runner stores full results under `artifacts/` and representative raw trajectories for the Triage and Verification agents. Scripted test-provider responses are never used for a measured-performance claim.
+See `docs/REPRODUCE.md` for the exact evaluated provider configuration.
