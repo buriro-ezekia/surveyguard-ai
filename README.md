@@ -132,6 +132,8 @@ python -m src.surveyguard.agent_eval \
 
 See [`docs/REPRODUCE.md`](docs/REPRODUCE.md) for the exact tested environment variables and CPU-only server flags.
 
+**CI note:** the repository includes GitHub Actions configuration, but final hosted runs were unavailable because the repository/account had reached its GitHub Actions budget/usage limit, as confirmed by the repository owner. Final verification is therefore documented from the local Ruff, pytest and frozen-baseline checks rather than represented as a successful hosted CI run.
+
 ## Repository structure
 
 ```text
