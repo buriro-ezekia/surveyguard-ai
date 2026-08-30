@@ -42,6 +42,10 @@ This translation changes only the model-facing contract. The frozen evaluation a
 
 Priority is assigned deterministically after each model recommendation: `valid_exception` maps to `low`; otherwise the final priority follows the validation finding's supplied severity when it is one of the supported priority levels. The model's priority field is therefore advisory and cannot override the operational rule metadata.
 
+### Context truth invariant
+
+Values supplied in the bounded `context` object are treated as observed facts for the case, not as hints that must be inferred again from other fields. Questionnaire notes are treated as authoritative rule-interpretation guidance unless another supplied fact directly contradicts them. This prevents small-model failures where an explicit contextual category is ignored and then incorrectly re-derived from age, duration or another variable.
+
 ## 6. Safety invariants
 
 1. The workflow must never auto-apply a substantive correction.
