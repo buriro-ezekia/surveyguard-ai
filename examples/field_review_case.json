@@ -1,0 +1,21 @@
+{
+  "id": "DEMO-ROSTER-001",
+  "title": "Completed household roster disagrees with reported household size",
+  "finding": {
+    "rule_id": "HH_SIZE_ROSTER_MATCH",
+    "rule_type": "consistency",
+    "severity": "high",
+    "fields": [
+      "household_size",
+      "roster_count"
+    ],
+    "evidence": {
+      "household_size": 6,
+      "roster_count": 7
+    }
+  },
+  "context": {
+    "roster_complete": true,
+    "supervisor_note": "The roster was completed and checked during the field review."
+  }
+}
