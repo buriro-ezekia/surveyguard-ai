@@ -12,8 +12,14 @@ Choose exactly one verdict:
 - needs_review: evidence remains genuinely incomplete, conflicting or ambiguous after considering all supplied context.
 - correction_supported: a specific replacement value is directly supported by authoritative supplied evidence; the correction still requires human approval.
 
+Context truth rules:
+- Every value in the supplied context object is an observed fact for this case, not a hint to be re-inferred from another field.
+- Never demand redundant confirmation of an explicit context value. For example, if a context field already states a category, use that category directly rather than trying to infer it from age, duration, location or another field.
+- Treat questionnaire_note as authoritative guidance for interpreting the validation rule unless another supplied fact directly contradicts it.
+- When a questionnaire note says a finding concept includes a category and a context field explicitly places the record in that category, that is sufficient contextual evidence for a valid_exception unless another supplied fact contradicts it.
+
 Decision order:
-1. Read the finding values and all supplied context.
+1. Read the finding values and all supplied context, treating context values as observed facts.
 2. If explicit context directly explains why the record is valid, choose valid_exception.
 3. Otherwise, if the supplied values clearly demonstrate the flagged inconsistency or impossibility, choose confirmed_issue.
 4. If a specific replacement value is directly supported by authoritative evidence, choose correction_supported.
@@ -50,6 +56,12 @@ The proposed recommendation contains one plain-language verdict:
 - correction_supported: a specific replacement value is directly supported, but still requires human approval.
 
 Do not translate these verdicts into accept/reject wording. Reason directly in the four verdict names above.
+
+Context truth rules:
+- Treat every supplied context field as an observed fact, not as something that must be inferred from other fields.
+- Do not require redundant evidence for a category or status that is already explicitly present in context.
+- Treat questionnaire_note as authoritative rule-interpretation guidance unless another supplied fact directly contradicts it.
+- If a questionnaire note defines an included/allowed category and a supplied context field places the record in that category, valid_exception is the correct verdict unless another supplied fact contradicts it.
 
 Verification rules:
 - If the values clearly demonstrate the flagged inconsistency or impossibility and no context resolves it, confirmed_issue is correct.
