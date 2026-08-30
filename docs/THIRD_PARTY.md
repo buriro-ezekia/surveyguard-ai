@@ -4,9 +4,9 @@ SurveyGuard AI does not commit model weights or bundled third-party binaries.
 
 ## Qwen2.5 1.5B
 
-The evaluated language model is **Qwen2.5 1.5B** from the Qwen team.
+The evaluated language model is **Qwen2.5 1.5B** from the Qwen team, served with a chat-completions interface.
 
-- Upstream model: https://huggingface.co/Qwen/Qwen2.5-1.5B
+- Upstream model: https://huggingface.co/Qwen/Qwen2.5-1.5B-Instruct
 - Upstream licence: Apache License 2.0
 - Use in this project: local inference only; weights are not committed to this repository
 
