@@ -25,22 +25,24 @@ Given one validation finding plus bounded contextual evidence, produce a review 
 - `defer_review`: evidence is insufficient or the case requires additional human verification.
 - `propose_correction`: a specific correction is supported by authoritative evidence, but must still be approved by a human.
 
-### Model-facing verdict contract
+### Model-facing structured assessment contract
 
-The model does not choose the externally scored `accept_finding` / `reject_finding` labels directly because those names proved semantically ambiguous in the first full live evaluation. It chooses one plain-language verdict, which is mapped deterministically:
+After two full live evaluations showed that direct four-way classification was still brittle for the local 1.5B model, the agents stopped choosing a verdict or scored action. They now assess four evidence-state questions independently:
 
-- `confirmed_issue` -> `accept_finding` (keep the flag);
-- `valid_exception` -> `reject_finding` (dismiss the flag);
-- `needs_review` -> `defer_review`;
-- `correction_supported` -> `propose_correction`.
+- whether context fully resolves the flag as a valid exception;
+- whether the record directly supports the flagged issue;
+- whether material ambiguity or independent review remains;
+- whether an exact correction value is directly supported.
 
-This translation changes only the model-facing contract. The frozen evaluation actions, cases and QARS definition remain unchanged. Agent-to-agent hand-offs also stay in verdict space; external action labels are introduced only at the deterministic workflow boundary.
+The workflow maps these assessment facts deterministically, in order: supported correction -> `propose_correction`; fully resolved exception -> `reject_finding`; unresolved review need -> `defer_review`; directly supported issue -> `accept_finding`; otherwise -> `defer_review`.
+
+This changes only the model-facing decomposition. The frozen evaluation actions, cases and QARS definition remain unchanged.
 
 ## 5. Priorities
 
 `critical`, `high`, `medium`, `low`.
 
-Priority is assigned deterministically after each model recommendation: `valid_exception` maps to `low`; otherwise the final priority follows the validation finding's supplied severity when it is one of the supported priority levels. The model's priority field is therefore advisory and cannot override the operational rule metadata.
+Priority is assigned deterministically after action mapping: dismissed valid exceptions map to `low`; otherwise the final priority follows the supplied validation severity when it is one of the supported priority levels.
 
 ### Context truth invariant
 
