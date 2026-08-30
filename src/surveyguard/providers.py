@@ -22,17 +22,17 @@ class ChatProvider(Protocol):
 class OpenAICompatibleProvider:
     base_url: str
     model: str
-    api_key: str = "ollama"
-    timeout_seconds: float = 60.0
+    api_key: str = "surveyguard-local"
+    timeout_seconds: float = 300.0
     temperature: float = 0.0
 
     @classmethod
     def from_env(cls) -> OpenAICompatibleProvider:
         return cls(
-            base_url=os.getenv("SURVEYGUARD_BASE_URL", "http://localhost:11434/v1"),
-            model=os.getenv("SURVEYGUARD_MODEL", "qwen2.5:3b"),
-            api_key=os.getenv("SURVEYGUARD_API_KEY", "ollama"),
-            timeout_seconds=float(os.getenv("SURVEYGUARD_TIMEOUT_SECONDS", "60")),
+            base_url=os.getenv("SURVEYGUARD_BASE_URL", "http://127.0.0.1:8081/v1"),
+            model=os.getenv("SURVEYGUARD_MODEL", "qwen2.5:1.5b"),
+            api_key=os.getenv("SURVEYGUARD_API_KEY", "surveyguard-local"),
+            timeout_seconds=float(os.getenv("SURVEYGUARD_TIMEOUT_SECONDS", "300")),
         )
 
     def complete(self, *, system: str, user: str) -> str:
