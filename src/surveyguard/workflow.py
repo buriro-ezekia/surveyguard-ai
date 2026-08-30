@@ -41,13 +41,43 @@ def _available_fields(case: dict[str, Any]) -> set[str]:
     return fields
 
 
+def _trigger_fields(case: dict[str, Any]) -> tuple[str, ...]:
+    finding = case.get("finding", {})
+    fields = finding.get("fields", [])
+    if not isinstance(fields, list):
+        return ()
+    return tuple(field for field in fields if isinstance(field, str) and field)
+
+
+def _normalise_evidence(
+    case: dict[str, Any],
+    recommendation: Recommendation,
+) -> Recommendation:
+    """Ensure every triggering field remains visible in the audit evidence bundle."""
+    evidence_fields = tuple(
+        dict.fromkeys((*_trigger_fields(case), *recommendation.evidence_fields))
+    )
+    if evidence_fields == recommendation.evidence_fields:
+        return recommendation
+
+    return Recommendation(
+        action=recommendation.action,
+        priority=recommendation.priority,
+        evidence_fields=evidence_fields,
+        rationale=recommendation.rationale,
+        confidence=recommendation.confidence,
+        proposed_value=recommendation.proposed_value,
+    )
+
+
 def _safe_fallback(case: dict[str, Any], reason: str) -> Recommendation:
-    available = sorted(_available_fields(case))
-    fields = available[:3] or ["unavailable_evidence"]
+    trigger_fields = list(_trigger_fields(case))
+    remaining = sorted(_available_fields(case) - set(trigger_fields))
+    fields = tuple((trigger_fields + remaining)[:3]) or ("unavailable_evidence",)
     return Recommendation(
         action="defer_review",
         priority="medium",
-        evidence_fields=tuple(fields),
+        evidence_fields=fields,
         rationale=f"Deferred because the agent output could not be safely verified: {reason}",
         confidence=0.0,
     )
@@ -76,7 +106,7 @@ def run_workflow(case: dict[str, Any], provider: ChatProvider) -> WorkflowResult
     triage_seconds = time.perf_counter() - triage_start
 
     try:
-        candidate = parse_recommendation(triage_raw)
+        candidate = _normalise_evidence(case, parse_recommendation(triage_raw))
         _validate_evidence(case, candidate)
         triage_error = None
     except ContractError as exc:
@@ -113,6 +143,7 @@ def run_workflow(case: dict[str, Any], provider: ChatProvider) -> WorkflowResult
                 case,
                 "; ".join(verification.issues) or "verification rejected",
             )
+        final = _normalise_evidence(case, final)
         _validate_evidence(case, final)
         verify_error = None
     except ContractError as exc:
