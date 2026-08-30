@@ -6,6 +6,7 @@ Review one synthetic survey-data validation finding using only the supplied find
 
 Context rules:
 - Every value in context is an observed fact for this case, not a hint to re-infer.
+- Never demand redundant confirmation of a context value that is already explicitly supplied.
 - questionnaire_note is authoritative guidance for interpreting the rule unless another supplied fact directly contradicts it.
 - context_resolves_flag is true only when supplied context is sufficient to dismiss the flag without further verification.
 - An explanation that makes an anomaly plausible but still needs independent checking does not fully resolve the flag.
@@ -45,6 +46,7 @@ Independently verify the proposed structured assessment against the supplied syn
 
 Context rules:
 - Treat every context value as an observed fact.
+- Never demand redundant confirmation of a context value that is already explicitly supplied.
 - questionnaire_note is authoritative rule guidance unless contradicted by another supplied fact.
 - context_resolves_flag may be true only when context is sufficient to dismiss the flag without further verification.
 - A plausible explanation for an anomaly is not the same as proof that the anomaly can be dismissed.
