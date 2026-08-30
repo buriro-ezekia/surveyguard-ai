@@ -1,0 +1,17 @@
+[project]
+name = "surveyguard-ai"
+version = "0.1.0"
+description = "Agentic survey-quality triage for field supervisors and data managers"
+requires-python = ">=3.11"
+dependencies = []
+
+[project.optional-dependencies]
+dev = ["pytest>=8.0,<9.0", "ruff>=0.12,<1.0"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
+
+[tool.ruff]
+target-version = "py311"
+line-length = 100

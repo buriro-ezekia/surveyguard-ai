@@ -1,0 +1,113 @@
+{
+  "case_id": "SG-007",
+  "input_sha256": "054ac4b200533a0a492cd93887bb54af3051d3d58e97517ec8dee48551702642",
+  "policy_tool": {
+    "context_resolves_flag": false,
+    "flag_supported_by_record": true,
+    "needs_additional_review": true,
+    "specific_correction_supported": false,
+    "evidence_fields": [
+      "distance_from_ea_km",
+      "relocation_authorised",
+      "relocation_note_present"
+    ],
+    "rationale": "The GPS anomaly remains review-worthy even when relocation context is present because the location still requires independent verification.",
+    "confidence": 1.0,
+    "proposed_value": null
+  },
+  "agents": [
+    {
+      "agent": "triage",
+      "system_instruction": "You are SurveyGuard's Triage Agent.\n\nReview one synthetic survey-data validation finding using the supplied case and deterministic policy_tool output. Do not choose a final action label. Instead assess the evidence state and explain whether the case evidence is consistent with the policy tool.\n\nPolicy-tool rules:\n- policy_tool is a deterministic survey-review policy computed only from the supplied rule family, record evidence and context.\n- Treat policy_tool as the decision authority for supported rule families. Do not invent a different operational outcome merely because wording feels uncertain.\n- Your role is to inspect the supplied evidence, explain the policy assessment, cite material fields and surface genuine contradictions.\n- If you believe the policy assessment conflicts with the supplied facts, state that clearly in the rationale while still returning the structured assessment you believe the facts support.\n\nContext rules:\n- Every value in context is an observed fact for this case, not a hint to re-infer.\n- Never demand redundant confirmation of a context value that is already explicitly supplied.\n- questionnaire_note is authoritative guidance for interpreting the rule unless another supplied fact directly contradicts it.\n- context_resolves_flag is true only when supplied context is sufficient to dismiss the flag without further verification.\n- An explanation that makes an anomaly plausible but still needs independent checking does not fully resolve the flag.\n\nAssessment fields:\n- context_resolves_flag: true only if context establishes a valid exception or false positive.\n- flag_supported_by_record: true if the supplied record values directly demonstrate the flagged inconsistency, impossibility or missing requirement; false if they directly refute it; null if the flag cannot be confirmed from the supplied record alone.\n- needs_additional_review: true when material ambiguity or independent verification remains necessary after considering all supplied evidence.\n- specific_correction_supported: true only when an exact replacement value is directly supported by authoritative supplied evidence.\n- proposed_value: the exact supported replacement value when specific_correction_supported is true; otherwise null.\n\nImportant distinctions:\n- A rule-defined exception can fully resolve a flag.\n- An anomaly signal may remain review-worthy even when context offers a plausible explanation.\n- If context fully resolves the flag, needs_additional_review should normally be false.\n- If a correction is supported, never claim it was applied.\n- Do not use your own uncertainty as a reason to defer when the supplied facts already answer the question.\n\nAlways include every finding.fields entry in evidence_fields and also include every contextual field materially used.\n\nReturn JSON only:\n{\n  \"context_resolves_flag\": false,\n  \"flag_supported_by_record\": true,\n  \"needs_additional_review\": false,\n  \"specific_correction_supported\": false,\n  \"evidence_fields\": [\"...\"],\n  \"rationale\": \"...\",\n  \"confidence\": 0.8,\n  \"proposed_value\": null\n}\n",
+      "user_input": "{\"case\": {\"context\": {\"relocation_authorised\": true, \"relocation_note_present\": true}, \"finding\": {\"evidence\": {\"distance_from_ea_km\": 14.2}, \"fields\": [\"distance_from_ea_km\"], \"rule_id\": \"GPS\", \"rule_type\": \"gps_outlier\", \"severity\": \"high\"}, \"id\": \"SG-007\", \"title\": \"GPS outlier with authorised relocation\"}, \"policy_tool\": {\"confidence\": 1.0, \"context_resolves_flag\": false, \"evidence_fields\": [\"distance_from_ea_km\", \"relocation_authorised\", \"relocation_note_present\"], \"flag_supported_by_record\": true, \"needs_additional_review\": true, \"proposed_value\": null, \"rationale\": \"The GPS anomaly remains review-worthy even when relocation context is present because the location still requires independent verification.\", \"specific_correction_supported\": false}}",
+      "raw_response": "{\n  \"context_resolves_flag\": false,\n  \"flag_supported_by_record\": true,\n  \"needs_additional_review\": false,\n  \"specific_correction_supported\": false,\n  \"evidence_fields\": [\"distance_from_ea_km\", \"relocation_authorised\", \"relocation_note_present\"],\n  \"rationale\": \"The GPS outlier remains review-worthy even with the relocation context present because the location still requires independent verification.\",\n  \"confidence\": 0.8,\n  \"proposed_value\": null\n}",
+      "parsed": {
+        "context_resolves_flag": false,
+        "flag_supported_by_record": true,
+        "needs_additional_review": false,
+        "specific_correction_supported": false,
+        "evidence_fields": [
+          "distance_from_ea_km",
+          "relocation_authorised",
+          "relocation_note_present"
+        ],
+        "rationale": "The GPS outlier remains review-worthy even with the relocation context present because the location still requires independent verification.",
+        "confidence": 0.8,
+        "proposed_value": null
+      },
+      "contract_error": null,
+      "runtime_seconds": 17.745425700006308
+    },
+    {
+      "agent": "verification",
+      "system_instruction": "You are SurveyGuard's Verification Agent.\n\nIndependently verify the proposed structured assessment against the supplied synthetic case and deterministic policy_tool output. Do not choose a final action label. Check each assessment field separately.\n\nPolicy-tool rules:\n- policy_tool is a deterministic guardrail derived only from solver-visible rule family, record evidence and context.\n- Check whether the proposed assessment is consistent with both the case evidence and the policy tool.\n- Do not silently invert a policy decision. If you believe the policy tool conflicts with the supplied facts, describe the contradiction explicitly in issues.\n- The deterministic workflow boundary, not the language model, decides whether a policy override is applied.\n\nContext rules:\n- Treat every context value as an observed fact.\n- Never demand redundant confirmation of a context value that is already explicitly supplied.\n- questionnaire_note is authoritative rule guidance unless contradicted by another supplied fact.\n- context_resolves_flag may be true only when context is sufficient to dismiss the flag without further verification.\n- A plausible explanation for an anomaly is not the same as proof that the anomaly can be dismissed.\n\nCheck:\n1. Does context fully establish a valid exception or false positive?\n2. Do the record values directly support the flagged issue?\n3. Does material ambiguity or a need for independent checking remain?\n4. Is an exact correction value directly supported?\n5. Are all triggering and materially used contextual fields cited?\n6. Is any proposed correction still human-reviewed rather than auto-applied?\n\nDo not reject an assessment merely because of priority; priority is assigned deterministically after verification.\n\nReturn JSON only:\n{\n  \"approved\": true,\n  \"issues\": [],\n  \"replacement\": null\n}\n\nIf any assessment field is materially wrong, set approved to false and return a complete replacement:\n{\n  \"approved\": false,\n  \"issues\": [\"...\"],\n  \"replacement\": {\n    \"context_resolves_flag\": false,\n    \"flag_supported_by_record\": true,\n    \"needs_additional_review\": false,\n    \"specific_correction_supported\": false,\n    \"evidence_fields\": [\"...\"],\n    \"rationale\": \"...\",\n    \"confidence\": 0.8,\n    \"proposed_value\": null\n  }\n}\n",
+      "user_input": "{\"case\": {\"context\": {\"relocation_authorised\": true, \"relocation_note_present\": true}, \"finding\": {\"evidence\": {\"distance_from_ea_km\": 14.2}, \"fields\": [\"distance_from_ea_km\"], \"rule_id\": \"GPS\", \"rule_type\": \"gps_outlier\", \"severity\": \"high\"}, \"id\": \"SG-007\", \"title\": \"GPS outlier with authorised relocation\"}, \"policy_tool\": {\"confidence\": 1.0, \"context_resolves_flag\": false, \"evidence_fields\": [\"distance_from_ea_km\", \"relocation_authorised\", \"relocation_note_present\"], \"flag_supported_by_record\": true, \"needs_additional_review\": true, \"proposed_value\": null, \"rationale\": \"The GPS anomaly remains review-worthy even when relocation context is present because the location still requires independent verification.\", \"specific_correction_supported\": false}, \"proposed_assessment\": {\"confidence\": 0.8, \"context_resolves_flag\": false, \"evidence_fields\": [\"distance_from_ea_km\", \"relocation_authorised\", \"relocation_note_present\"], \"flag_supported_by_record\": true, \"needs_additional_review\": false, \"proposed_value\": null, \"rationale\": \"The GPS outlier remains review-worthy even with the relocation context present because the location still requires independent verification.\", \"specific_correction_supported\": false}}",
+      "raw_response": "{\n  \"approved\": false,\n  \"issues\": [\"The proposed assessment conflicts with the policy tool's confidence and context resolution flag\"],\n  \"replacement\": {\n    \"context_resolves_flag\": false,\n    \"flag_supported_by_record\": true,\n    \"needs_additional_review\": true,\n    \"specific_correction_supported\": false,\n    \"evidence_fields\": [\"distance_from_ea_km\", \"relocation_authorised\", \"relocation_note_present\"],\n    \"rationale\": \"The GPS outlier remains review-worthy even with the relocation context present because the location still requires independent verification.\",\n    \"confidence\": 0.8,\n    \"proposed_value\": null\n  }\n}",
+      "parsed": {
+        "approved": false,
+        "issues": [
+          "The proposed assessment conflicts with the policy tool's confidence and context resolution flag"
+        ],
+        "replacement": {
+          "context_resolves_flag": false,
+          "flag_supported_by_record": true,
+          "needs_additional_review": true,
+          "specific_correction_supported": false,
+          "evidence_fields": [
+            "distance_from_ea_km",
+            "relocation_authorised",
+            "relocation_note_present"
+          ],
+          "rationale": "The GPS outlier remains review-worthy even with the relocation context present because the location still requires independent verification.",
+          "confidence": 0.8,
+          "proposed_value": null
+        }
+      },
+      "contract_error": null,
+      "runtime_seconds": 24.623729099985212
+    }
+  ],
+  "model_final_assessment": {
+    "context_resolves_flag": false,
+    "flag_supported_by_record": true,
+    "needs_additional_review": true,
+    "specific_correction_supported": false,
+    "evidence_fields": [
+      "distance_from_ea_km",
+      "relocation_authorised",
+      "relocation_note_present"
+    ],
+    "rationale": "The GPS outlier remains review-worthy even with the relocation context present because the location still requires independent verification.",
+    "confidence": 0.8,
+    "proposed_value": null
+  },
+  "policy_override_applied": false,
+  "final_assessment": {
+    "context_resolves_flag": false,
+    "flag_supported_by_record": true,
+    "needs_additional_review": true,
+    "specific_correction_supported": false,
+    "evidence_fields": [
+      "distance_from_ea_km",
+      "relocation_authorised",
+      "relocation_note_present"
+    ],
+    "rationale": "The GPS outlier remains review-worthy even with the relocation context present because the location still requires independent verification.",
+    "confidence": 0.8,
+    "proposed_value": null
+  },
+  "final_recommendation": {
+    "action": "defer_review",
+    "priority": "high",
+    "evidence_fields": [
+      "distance_from_ea_km",
+      "relocation_authorised",
+      "relocation_note_present"
+    ],
+    "rationale": "The GPS outlier remains review-worthy even with the relocation context present because the location still requires independent verification.",
+    "confidence": 0.8,
+    "auto_apply": false,
+    "case_id": "SG-007"
+  },
+  "human_checkpoint_required": true
+}

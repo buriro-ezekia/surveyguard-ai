@@ -1,0 +1,411 @@
+[
+  {
+    "id": "SG-001",
+    "title": "Impossible respondent age",
+    "finding": {
+      "rule_id": "RANGE_AGE",
+      "rule_type": "range_violation",
+      "severity": "high",
+      "fields": [
+        "respondent_age"
+      ],
+      "evidence": {
+        "respondent_age": 135
+      }
+    },
+    "context": {},
+    "expected": {
+      "action": "accept_finding",
+      "priority": "high",
+      "evidence_fields": [
+        "respondent_age"
+      ],
+      "requires_human_review": true,
+      "correction_allowed": false
+    }
+  },
+  {
+    "id": "SG-002",
+    "title": "Pre-primary attendance contextual exception",
+    "finding": {
+      "rule_id": "SCHOOL_AGE",
+      "rule_type": "skip_logic",
+      "severity": "medium",
+      "fields": [
+        "child_age",
+        "school_attendance"
+      ],
+      "evidence": {
+        "child_age": 4,
+        "school_attendance": "yes"
+      }
+    },
+    "context": {
+      "education_level": "pre-primary",
+      "questionnaire_note": "School attendance includes pre-primary."
+    },
+    "expected": {
+      "action": "reject_finding",
+      "priority": "low",
+      "evidence_fields": [
+        "child_age",
+        "school_attendance",
+        "education_level"
+      ],
+      "requires_human_review": true,
+      "correction_allowed": false
+    }
+  },
+  {
+    "id": "SG-003",
+    "title": "Duplicate household identifier is an authorised revisit",
+    "finding": {
+      "rule_id": "DUP_HH",
+      "rule_type": "duplicate_id",
+      "severity": "high",
+      "fields": [
+        "household_id"
+      ],
+      "evidence": {
+        "household_id": "HH-104"
+      }
+    },
+    "context": {
+      "revisit_authorised": true,
+      "visit_number": 2,
+      "original_visit_number": 1
+    },
+    "expected": {
+      "action": "reject_finding",
+      "priority": "low",
+      "evidence_fields": [
+        "household_id",
+        "revisit_authorised",
+        "visit_number"
+      ],
+      "requires_human_review": true,
+      "correction_allowed": false
+    }
+  },
+  {
+    "id": "SG-004",
+    "title": "Household size disagrees with completed roster",
+    "finding": {
+      "rule_id": "HH_SIZE",
+      "rule_type": "consistency",
+      "severity": "high",
+      "fields": [
+        "household_size",
+        "roster_count"
+      ],
+      "evidence": {
+        "household_size": 4,
+        "roster_count": 5
+      }
+    },
+    "context": {
+      "roster_complete": true
+    },
+    "expected": {
+      "action": "propose_correction",
+      "priority": "high",
+      "evidence_fields": [
+        "household_size",
+        "roster_count",
+        "roster_complete"
+      ],
+      "requires_human_review": true,
+      "correction_allowed": true
+    }
+  },
+  {
+    "id": "SG-005",
+    "title": "Interview continued without consent",
+    "finding": {
+      "rule_id": "CONSENT",
+      "rule_type": "missing_consent",
+      "severity": "critical",
+      "fields": [
+        "consent",
+        "module_count"
+      ],
+      "evidence": {
+        "consent": "no",
+        "module_count": 7
+      }
+    },
+    "context": {},
+    "expected": {
+      "action": "accept_finding",
+      "priority": "critical",
+      "evidence_fields": [
+        "consent",
+        "module_count"
+      ],
+      "requires_human_review": true,
+      "correction_allowed": false
+    }
+  },
+  {
+    "id": "SG-006",
+    "title": "Short interview is valid short-form instrument",
+    "finding": {
+      "rule_id": "DURATION",
+      "rule_type": "duration_outlier",
+      "severity": "medium",
+      "fields": [
+        "duration_minutes"
+      ],
+      "evidence": {
+        "duration_minutes": 6
+      }
+    },
+    "context": {
+      "instrument_type": "short_form",
+      "expected_duration_range": [
+        4,
+        12
+      ]
+    },
+    "expected": {
+      "action": "reject_finding",
+      "priority": "low",
+      "evidence_fields": [
+        "duration_minutes",
+        "instrument_type",
+        "expected_duration_range"
+      ],
+      "requires_human_review": true,
+      "correction_allowed": false
+    }
+  },
+  {
+    "id": "SG-007",
+    "title": "GPS outlier with authorised relocation",
+    "finding": {
+      "rule_id": "GPS",
+      "rule_type": "gps_outlier",
+      "severity": "high",
+      "fields": [
+        "distance_from_ea_km"
+      ],
+      "evidence": {
+        "distance_from_ea_km": 14.2
+      }
+    },
+    "context": {
+      "relocation_authorised": true,
+      "relocation_note_present": true
+    },
+    "expected": {
+      "action": "defer_review",
+      "priority": "high",
+      "evidence_fields": [
+        "distance_from_ea_km",
+        "relocation_authorised",
+        "relocation_note_present"
+      ],
+      "requires_human_review": true,
+      "correction_allowed": false
+    }
+  },
+  {
+    "id": "SG-008",
+    "title": "Expenditure outlier explained by recorded unit",
+    "finding": {
+      "rule_id": "EXP_OUTLIER",
+      "rule_type": "numeric_outlier",
+      "severity": "medium",
+      "fields": [
+        "monthly_expenditure"
+      ],
+      "evidence": {
+        "monthly_expenditure": 9500
+      }
+    },
+    "context": {
+      "unit": "TZS_thousands",
+      "normalisation_expected": true
+    },
+    "expected": {
+      "action": "reject_finding",
+      "priority": "low",
+      "evidence_fields": [
+        "monthly_expenditure",
+        "unit",
+        "normalisation_expected"
+      ],
+      "requires_human_review": true,
+      "correction_allowed": false
+    }
+  },
+  {
+    "id": "SG-009",
+    "title": "Crop area cannot be interpreted without unit",
+    "finding": {
+      "rule_id": "AREA_UNIT",
+      "rule_type": "unit_ambiguity",
+      "severity": "medium",
+      "fields": [
+        "crop_area"
+      ],
+      "evidence": {
+        "crop_area": 5
+      }
+    },
+    "context": {
+      "area_unit": null
+    },
+    "expected": {
+      "action": "defer_review",
+      "priority": "medium",
+      "evidence_fields": [
+        "crop_area",
+        "area_unit"
+      ],
+      "requires_human_review": true,
+      "correction_allowed": false
+    }
+  },
+  {
+    "id": "SG-010",
+    "title": "Livestock skip logic contradiction",
+    "finding": {
+      "rule_id": "LIVESTOCK_SKIP",
+      "rule_type": "skip_logic",
+      "severity": "high",
+      "fields": [
+        "has_livestock",
+        "cattle_count"
+      ],
+      "evidence": {
+        "has_livestock": "no",
+        "cattle_count": 3
+      }
+    },
+    "context": {},
+    "expected": {
+      "action": "accept_finding",
+      "priority": "high",
+      "evidence_fields": [
+        "has_livestock",
+        "cattle_count"
+      ],
+      "requires_human_review": true,
+      "correction_allowed": false
+    }
+  },
+  {
+    "id": "SG-011",
+    "title": "Enumerator GPS pattern anomaly",
+    "finding": {
+      "rule_id": "ENUM_PATTERN",
+      "rule_type": "pattern_anomaly",
+      "severity": "high",
+      "fields": [
+        "enumerator_cluster_score"
+      ],
+      "evidence": {
+        "enumerator_cluster_score": 0.99
+      }
+    },
+    "context": {
+      "interviews_in_pattern": 20
+    },
+    "expected": {
+      "action": "defer_review",
+      "priority": "high",
+      "evidence_fields": [
+        "enumerator_cluster_score",
+        "interviews_in_pattern"
+      ],
+      "requires_human_review": true,
+      "correction_allowed": false
+    }
+  },
+  {
+    "id": "SG-012",
+    "title": "Birth date occurs after interview date",
+    "finding": {
+      "rule_id": "DATE_ORDER",
+      "rule_type": "date_order",
+      "severity": "critical",
+      "fields": [
+        "birth_date",
+        "interview_date"
+      ],
+      "evidence": {
+        "birth_date": "2026-08-29",
+        "interview_date": "2026-08-20"
+      }
+    },
+    "context": {},
+    "expected": {
+      "action": "accept_finding",
+      "priority": "critical",
+      "evidence_fields": [
+        "birth_date",
+        "interview_date"
+      ],
+      "requires_human_review": true,
+      "correction_allowed": false
+    }
+  },
+  {
+    "id": "SG-013",
+    "title": "Income is not applicable for non-working respondent",
+    "finding": {
+      "rule_id": "INCOME_REQUIRED",
+      "rule_type": "missing_required",
+      "severity": "medium",
+      "fields": [
+        "monthly_income"
+      ],
+      "evidence": {
+        "monthly_income": null
+      }
+    },
+    "context": {
+      "employment_status": "not_working",
+      "questionnaire_note": "Income is only required when currently working."
+    },
+    "expected": {
+      "action": "reject_finding",
+      "priority": "low",
+      "evidence_fields": [
+        "monthly_income",
+        "employment_status"
+      ],
+      "requires_human_review": true,
+      "correction_allowed": false
+    }
+  },
+  {
+    "id": "SG-014",
+    "title": "Other response lacks specification",
+    "finding": {
+      "rule_id": "OTHER_SPECIFY",
+      "rule_type": "missing_required",
+      "severity": "medium",
+      "fields": [
+        "water_source",
+        "water_source_other"
+      ],
+      "evidence": {
+        "water_source": "other",
+        "water_source_other": ""
+      }
+    },
+    "context": {},
+    "expected": {
+      "action": "accept_finding",
+      "priority": "medium",
+      "evidence_fields": [
+        "water_source",
+        "water_source_other"
+      ],
+      "requires_human_review": true,
+      "correction_allowed": false
+    }
+  }
+]

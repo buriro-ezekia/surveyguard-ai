@@ -1,0 +1,32 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Clone exact branch
+        shell: bash
+        run: |
+          BRANCH="${GITHUB_HEAD_REF:-$GITHUB_REF_NAME}"
+          git clone --depth 1 --branch "$BRANCH" "https://github.com/$GITHUB_REPOSITORY.git" repo
+      - name: Install development dependencies
+        working-directory: repo
+        run: |
+          python3 -m pip install --upgrade pip
+          python3 -m pip install -e ".[dev]"
+      - name: Lint
+        working-directory: repo
+        run: ruff check .
+      - name: Test
+        working-directory: repo
+        run: pytest -q
+      - name: Reproduce baseline
+        working-directory: repo
+        run: python3 -m src.surveyguard.evaluation

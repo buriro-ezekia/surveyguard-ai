@@ -1,0 +1,1 @@
+"""SurveyGuard AI hackathon package."""
