@@ -35,7 +35,7 @@ Given one validation finding plus bounded contextual evidence, produce a review 
 2. `propose_correction` is not equivalent to editing source data.
 3. Missing or conflicting evidence must not be converted into confident claims.
 4. The public evaluation uses synthetic cases only.
-5. Recommendations must identify the evidence fields used.
+5. Recommendations must identify the evidence fields used, and the deterministic gate preserves every triggering `finding.fields` entry in the auditable evidence bundle even when a model omits it.
 6. Consequential decisions remain with a human reviewer.
 
 ## 7. Baseline contract
