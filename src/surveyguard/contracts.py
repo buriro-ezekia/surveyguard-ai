@@ -7,6 +7,12 @@ from dataclasses import dataclass
 from typing import Any
 
 ACTIONS = {"accept_finding", "reject_finding", "defer_review", "propose_correction"}
+VERDICT_TO_ACTION = {
+    "confirmed_issue": "accept_finding",
+    "valid_exception": "reject_finding",
+    "needs_review": "defer_review",
+    "correction_supported": "propose_correction",
+}
 PRIORITIES = {"critical", "high", "medium", "low"}
 
 
@@ -63,7 +69,13 @@ def _json_object(text: str) -> dict[str, Any]:
 
 def parse_recommendation(text: str) -> Recommendation:
     data = _json_object(text)
+    verdict = data.get("verdict")
     action = data.get("action")
+    if verdict is not None:
+        if verdict not in VERDICT_TO_ACTION:
+            raise ContractError(f"Unsupported verdict: {verdict!r}")
+        action = VERDICT_TO_ACTION[verdict]
+
     priority = data.get("priority")
     evidence = data.get("evidence_fields")
     rationale = data.get("rationale")
