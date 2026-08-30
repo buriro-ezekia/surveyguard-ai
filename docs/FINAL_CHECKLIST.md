@@ -44,6 +44,7 @@ This checklist is designed to prevent avoidable qualification or judging losses 
 - [ ] Direct API charge is described as $0 without claiming local compute is free.
 - [ ] Failed Ollama/Vulkan runtime experiments remain documented.
 - [ ] Third-party components and licences are disclosed.
+- [ ] GitHub Actions budget limitation is disclosed accurately; local verification output is retained as the authoritative check.
 
 ## Video
 
