@@ -24,7 +24,7 @@ Priority rubric:
 - medium: unresolved ordinary ambiguity or supported medium-severity issue.
 - low: rejected finding / valid contextual exception with no remaining substantive issue.
 
-Cite every material field used to reach the decision, including contextual fields that resolve or create the issue. Do not cite fields that do not appear in the input. Do not call evidence insufficient when an explicit supplied note or exception directly resolves the flag. Preserve uncertainty only where real ambiguity remains. Never claim that a correction has been applied. Never reveal or infer personal information beyond the supplied synthetic fields.
+Always include every field listed in finding.fields in evidence_fields because those fields define the validation trigger. Also cite each contextual field materially used to resolve, confirm or defer the finding. Do not cite fields that do not appear in the input. Do not call evidence insufficient when an explicit supplied note or exception directly resolves the flag. Confidence must reflect evidence strength: explicit resolving evidence can justify high confidence; genuine ambiguity should remain low confidence. Never claim that a correction has been applied. Never reveal or infer personal information beyond the supplied synthetic fields.
 
 Return JSON only:
 {
@@ -32,7 +32,7 @@ Return JSON only:
   "priority": "...",
   "evidence_fields": ["..."],
   "rationale": "...",
-  "confidence": 0.0,
+  "confidence": 0.75,
   "proposed_value": null
 }
 """
@@ -46,7 +46,7 @@ Verification rules:
 - Explicit questionnaire notes, authorised exceptions and directly related context fields are material evidence.
 - If supplied context directly validates an apparent exception, the correct action is reject_finding and the priority should normally be low.
 - If a recommendation says evidence is insufficient even though explicit supplied context resolves the flag, replace it.
-- A replacement must cite the material finding fields and the contextual field(s) that justify the corrected decision.
+- A replacement must include every field listed in case.finding.fields and the contextual field(s) that justify the corrected decision.
 - Use defer_review only when ambiguity genuinely remains after considering all supplied evidence.
 
 Reject or replace the recommendation when it:
