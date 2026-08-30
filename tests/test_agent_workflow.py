@@ -93,7 +93,7 @@ def test_verifier_replacement_is_used() -> None:
     assert result.recommendation["action"] == "reject_finding"
 
 
-def test_unavailable_evidence_forces_safe_fallback() -> None:
+def test_policy_recovers_from_unavailable_agent_evidence() -> None:
     provider = ScriptedProvider(
         [
             json.dumps(
@@ -111,8 +111,9 @@ def test_unavailable_evidence_forces_safe_fallback() -> None:
     )
 
     result = run_workflow(CASE, provider)
-    assert result.recommendation["action"] == "defer_review"
-    assert result.recommendation["confidence"] == 0.0
+    assert result.recommendation["action"] == "reject_finding"
+    assert result.recommendation["auto_apply"] is False
+    assert result.trajectory["policy_override_applied"] is True
 
 
 def test_gold_labels_are_rejected_by_workflow() -> None:
@@ -259,6 +260,7 @@ def test_trigger_fields_are_added_to_agent_evidence() -> None:
     assert result.recommendation["evidence_fields"] == [
         "household_id",
         "revisit_authorised",
+        "visit_number",
     ]
 
 
@@ -470,6 +472,20 @@ def test_structured_assessment_maps_valid_exception() -> None:
 
 
 def test_structured_assessment_defers_when_review_remains() -> None:
+    case = {
+        "id": "T-GPS",
+        "finding": {
+            "rule_id": "GPS",
+            "rule_type": "gps_outlier",
+            "severity": "high",
+            "fields": ["distance_from_ea_km"],
+            "evidence": {"distance_from_ea_km": 14.2},
+        },
+        "context": {
+            "relocation_authorised": True,
+            "relocation_note_present": True,
+        },
+    }
     provider = ScriptedProvider(
         [
             json.dumps(
@@ -478,8 +494,12 @@ def test_structured_assessment_defers_when_review_remains() -> None:
                     "flag_supported_by_record": True,
                     "needs_additional_review": True,
                     "specific_correction_supported": False,
-                    "evidence_fields": ["household_id"],
-                    "rationale": "The anomaly is real but still needs independent review.",
+                    "evidence_fields": [
+                        "distance_from_ea_km",
+                        "relocation_authorised",
+                        "relocation_note_present",
+                    ],
+                    "rationale": "The GPS anomaly still needs independent review.",
                     "confidence": 0.7,
                     "proposed_value": None,
                 }
@@ -488,8 +508,9 @@ def test_structured_assessment_defers_when_review_remains() -> None:
         ]
     )
 
-    result = run_workflow(CASE, provider)
+    result = run_workflow(case, provider)
     assert result.recommendation["action"] == "defer_review"
+    assert result.recommendation["priority"] == "high"
 
 
 def test_structured_assessment_maps_supported_correction() -> None:
@@ -530,3 +551,29 @@ def test_structured_assessment_maps_supported_correction() -> None:
     assert result.recommendation["action"] == "propose_correction"
     assert result.recommendation["proposed_value"] == 5
     assert result.recommendation["auto_apply"] is False
+
+
+def test_policy_tool_is_recorded_in_trajectory() -> None:
+    provider = ScriptedProvider(
+        [
+            json.dumps(
+                {
+                    "context_resolves_flag": False,
+                    "flag_supported_by_record": True,
+                    "needs_additional_review": False,
+                    "specific_correction_supported": False,
+                    "evidence_fields": ["household_id"],
+                    "rationale": "The duplicate looks supported.",
+                    "confidence": 0.8,
+                    "proposed_value": None,
+                }
+            ),
+            json.dumps({"approved": True, "issues": [], "replacement": None}),
+        ]
+    )
+
+    result = run_workflow(CASE, provider)
+
+    assert "policy_tool" in result.trajectory
+    assert result.trajectory["policy_override_applied"] is True
+    assert result.recommendation["action"] == "reject_finding"
