@@ -4,11 +4,13 @@ from __future__ import annotations
 
 import argparse
 import json
+import sys
 from pathlib import Path
 from typing import Any
 
-from src.surveyguard.providers import OpenAICompatibleProvider
-from src.surveyguard.workflow import run_workflow
+REPOSITORY_ROOT = Path(__file__).resolve().parents[1]
+if str(REPOSITORY_ROOT) not in sys.path:
+    sys.path.insert(0, str(REPOSITORY_ROOT))
 
 
 def _load_case(path: Path) -> dict[str, Any]:
@@ -31,6 +33,9 @@ def main() -> None:
         help="Optional path for the complete agent/policy trajectory JSON.",
     )
     args = parser.parse_args()
+
+    from src.surveyguard.providers import OpenAICompatibleProvider
+    from src.surveyguard.workflow import run_workflow
 
     case = _load_case(args.case)
     provider = OpenAICompatibleProvider.from_env()
