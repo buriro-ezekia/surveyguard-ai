@@ -316,3 +316,85 @@ def test_verifier_replacement_can_use_plain_verdict() -> None:
 
     assert verification.replacement is not None
     assert verification.replacement.action == "defer_review"
+
+
+def test_priority_is_derived_from_rule_severity() -> None:
+    case = {
+        "id": "T-RANGE",
+        "finding": {
+            "rule_id": "RANGE_AGE",
+            "rule_type": "range_violation",
+            "severity": "high",
+            "fields": ["respondent_age"],
+            "evidence": {"respondent_age": 135},
+        },
+        "context": {},
+    }
+    provider = ScriptedProvider(
+        [
+            json.dumps(
+                {
+                    "verdict": "confirmed_issue",
+                    "priority": "critical",
+                    "evidence_fields": ["respondent_age"],
+                    "rationale": "The age is impossible.",
+                    "confidence": 0.95,
+                    "proposed_value": None,
+                }
+            ),
+            json.dumps({"approved": True, "issues": [], "replacement": None}),
+        ]
+    )
+
+    result = run_workflow(case, provider)
+
+    assert result.recommendation["action"] == "accept_finding"
+    assert result.recommendation["priority"] == "high"
+
+
+def test_valid_exception_priority_is_always_low() -> None:
+    provider = ScriptedProvider(
+        [
+            json.dumps(
+                {
+                    "verdict": "valid_exception",
+                    "priority": "high",
+                    "evidence_fields": ["household_id", "revisit_authorised"],
+                    "rationale": "The duplicate is an authorised revisit.",
+                    "confidence": 0.9,
+                    "proposed_value": None,
+                }
+            ),
+            json.dumps({"approved": True, "issues": [], "replacement": None}),
+        ]
+    )
+
+    result = run_workflow(CASE, provider)
+
+    assert result.recommendation["action"] == "reject_finding"
+    assert result.recommendation["priority"] == "low"
+
+
+def test_verifier_receives_verdict_not_external_action_label() -> None:
+    provider = ScriptedProvider(
+        [
+            json.dumps(
+                {
+                    "verdict": "confirmed_issue",
+                    "priority": "high",
+                    "evidence_fields": ["household_id"],
+                    "rationale": "The flag is supported.",
+                    "confidence": 0.8,
+                    "proposed_value": None,
+                }
+            ),
+            json.dumps({"approved": True, "issues": [], "replacement": None}),
+        ]
+    )
+
+    run_workflow(CASE, provider)
+    verifier_input = json.loads(provider.calls[1]["user"])
+    proposed = verifier_input["proposed_recommendation"]
+
+    assert proposed["verdict"] == "confirmed_issue"
+    assert "action" not in proposed
