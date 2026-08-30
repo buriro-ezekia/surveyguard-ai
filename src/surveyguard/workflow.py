@@ -9,7 +9,14 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
-from .contracts import ContractError, Recommendation, parse_recommendation, parse_verification
+from .contracts import (
+    ACTION_TO_VERDICT,
+    PRIORITIES,
+    ContractError,
+    Recommendation,
+    parse_recommendation,
+    parse_verification,
+)
 from .prompts import TRIAGE_SYSTEM, VERIFY_SYSTEM
 from .providers import ChatProvider
 
@@ -47,6 +54,32 @@ def _trigger_fields(case: dict[str, Any]) -> tuple[str, ...]:
     if not isinstance(fields, list):
         return ()
     return tuple(field for field in fields if isinstance(field, str) and field)
+
+
+def _normalise_priority(
+    case: dict[str, Any],
+    recommendation: Recommendation,
+) -> Recommendation:
+    """Apply the operational priority policy from verdict and rule severity."""
+    severity = case.get("finding", {}).get("severity")
+    if recommendation.action == "reject_finding":
+        priority = "low"
+    elif severity in PRIORITIES:
+        priority = severity
+    else:
+        priority = recommendation.priority
+
+    if priority == recommendation.priority:
+        return recommendation
+
+    return Recommendation(
+        action=recommendation.action,
+        priority=priority,
+        evidence_fields=recommendation.evidence_fields,
+        rationale=recommendation.rationale,
+        confidence=recommendation.confidence,
+        proposed_value=recommendation.proposed_value,
+    )
 
 
 def _normalise_evidence(
@@ -106,7 +139,10 @@ def run_workflow(case: dict[str, Any], provider: ChatProvider) -> WorkflowResult
     triage_seconds = time.perf_counter() - triage_start
 
     try:
-        candidate = _normalise_evidence(case, parse_recommendation(triage_raw))
+        candidate = _normalise_priority(
+            case,
+            _normalise_evidence(case, parse_recommendation(triage_raw)),
+        )
         _validate_evidence(case, candidate)
         triage_error = None
     except ContractError as exc:
@@ -119,14 +155,22 @@ def run_workflow(case: dict[str, Any], provider: ChatProvider) -> WorkflowResult
             "system_instruction": TRIAGE_SYSTEM,
             "user_input": user_payload,
             "raw_response": triage_raw,
-            "parsed": candidate.to_dict(),
+            "parsed": {
+                **candidate.to_dict(),
+                "verdict": ACTION_TO_VERDICT[candidate.action],
+            },
             "contract_error": triage_error,
             "runtime_seconds": triage_seconds,
         }
     )
 
+    candidate_for_verifier = candidate.to_dict()
+    candidate_for_verifier.pop("action", None)
+    candidate_for_verifier.pop("auto_apply", None)
+    candidate_for_verifier["verdict"] = ACTION_TO_VERDICT[candidate.action]
+
     verification_payload = json.dumps(
-        {"case": case, "proposed_recommendation": candidate.to_dict()},
+        {"case": case, "proposed_recommendation": candidate_for_verifier},
         sort_keys=True,
         ensure_ascii=False,
     )
@@ -143,7 +187,7 @@ def run_workflow(case: dict[str, Any], provider: ChatProvider) -> WorkflowResult
                 case,
                 "; ".join(verification.issues) or "verification rejected",
             )
-        final = _normalise_evidence(case, final)
+        final = _normalise_priority(case, _normalise_evidence(case, final))
         _validate_evidence(case, final)
         verify_error = None
     except ContractError as exc:
@@ -168,7 +212,10 @@ def run_workflow(case: dict[str, Any], provider: ChatProvider) -> WorkflowResult
                 "issues": list(verification.issues),
                 "replacement": None
                 if verification.replacement is None
-                else verification.replacement.to_dict(),
+                else {
+                    **verification.replacement.to_dict(),
+                    "verdict": ACTION_TO_VERDICT[verification.replacement.action],
+                },
             },
             "contract_error": verify_error,
             "runtime_seconds": verify_seconds,
