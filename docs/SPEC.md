@@ -67,17 +67,17 @@ The baseline receives the same case object as the final workflow but intentional
 
 This represents a basic scripted triage approach without contextual reasoning.
 
-## 8. Advanced-solution hypothesis
+## 8. Advanced-solution architecture
 
-The working hypothesis is that two bounded agents plus a deterministic gate will outperform the baseline:
+The measured Iteration-6 and Iteration-7 failures showed that the local 1.5B model should not be the sole authority for domain-critical triage classes. The current workflow therefore uses a hybrid policy-tool architecture:
 
-1. **Triage agent** — reads the finding and bounded case context, then recommends action, priority and supporting evidence.
-2. **Verification agent** — independently checks contextual exceptions, evidence sufficiency and safety, replacing a recommendation when necessary.
-3. **Deterministic safety gate** — rejects unavailable evidence, malformed outputs and unsupported correction proposals.
+1. **Survey-review policy tool** — deterministically interprets supported validation rule families using only rule type, supplied record evidence and bounded context. It never reads evaluation labels.
+2. **Triage agent** — inspects the same case plus the policy-tool assessment, produces a structured evidence-state assessment and an explanation.
+3. **Verification agent** — independently checks the proposed assessment, context use, evidence coverage and correction safety.
+4. **Deterministic decision boundary** — retains the policy decision state when an agent conflicts with a supported policy, while preserving an aligned agent explanation and evidence.
+5. **Safety gate** — keeps `auto_apply=false`, rejects unavailable evidence and never applies a proposed correction automatically.
 
-The architecture remains intentionally small: context selection and decision-making stay in one triage stage unless measured evidence shows that a separate context agent is necessary.
-
-The architecture is a hypothesis, not a commitment. Components will be retained only if the fixed evaluation shows a meaningful improvement.
+This design deliberately assigns stable, auditable survey-rule semantics to deterministic code and uses the language model for contextual explanation and verification rather than asking a small local model to rediscover the policy from scratch.
 
 ## 9. Acceptance criteria for the final solution
 
