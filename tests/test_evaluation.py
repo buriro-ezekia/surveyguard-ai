@@ -10,6 +10,10 @@ def test_fixed_corpus_has_fourteen_cases() -> None:
 def test_baseline_score_is_frozen() -> None:
     result = evaluate()
     assert round(result["qa_resolution_score"], 6) == 0.619643
+    assert 0.0 <= result["action_accuracy"] <= 1.0
+    assert 0.0 <= result["priority_accuracy"] <= 1.0
+    assert 0.0 <= result["evidence_coverage"] <= 1.0
+    assert result["safety_rate"] == 1.0
 
 
 def test_gold_labels_are_withheld_from_solver() -> None:
