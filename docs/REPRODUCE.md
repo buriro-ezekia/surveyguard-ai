@@ -93,13 +93,23 @@ export SURVEYGUARD_TIMEOUT_SECONDS="60"
 
 For a hosted provider, replace the base URL, model and API key. Do not commit credentials.
 
-## 6. Run the agentic evaluation
+## 6. Smoke-test the provider and workflow
+
+Before spending time on the complete evaluation, run one deliberately contextual case:
+
+```bash
+python -m src.surveyguard.agent_eval --case SG-002 --output artifacts/smoke_SG-002.json
+```
+
+The output is explicitly marked `comparable_with_frozen_baseline=false`. A one-case smoke result must never be presented as the hackathon improvement score.
+
+## 7. Run the complete agentic evaluation
 
 ```bash
 python -m src.surveyguard.agent_eval
 ```
 
-The runner evaluates the same 14 synthetic cases used by the baseline. Gold labels are withheld from the agents.
+Only this no-`--case` run evaluates the same 14 synthetic cases used by the baseline and is marked `comparable_with_frozen_baseline=true`. Gold labels are withheld from the agents.
 
 Outputs are written to:
 
@@ -119,7 +129,7 @@ The console reports:
 
 The result must not be added to the improvement changelog as measured evidence until the complete run succeeds and the provider/model identity is recorded.
 
-## 7. Inspect one trajectory
+## 8. Inspect one trajectory
 
 Each trajectory records:
 
@@ -134,7 +144,7 @@ Each trajectory records:
 
 No raw survey respondent data are needed because the public corpus is synthetic.
 
-## 8. Cost and runtime
+## 9. Cost and runtime
 
 The baseline has no model cost.
 
