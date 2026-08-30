@@ -66,6 +66,9 @@ def main() -> None:
 
     evaluation = evaluate(solver=solver, cases=cases)
     evaluation["runtime_seconds"] = time.perf_counter() - started
+    evaluation["runtime_seconds_per_case"] = (
+        evaluation["runtime_seconds"] / evaluation["cases"]
+    )
     evaluation["provider"] = {
         "base_url": provider.base_url,
         "model": provider.model,
@@ -86,7 +89,12 @@ def main() -> None:
         f"{str(evaluation['comparable_with_frozen_baseline']).lower()}"
     )
     print(f"qa_resolution_score={evaluation['qa_resolution_score']:.6f}")
+    print(f"action_accuracy={evaluation['action_accuracy']:.6f}")
+    print(f"priority_accuracy={evaluation['priority_accuracy']:.6f}")
+    print(f"evidence_coverage={evaluation['evidence_coverage']:.6f}")
+    print(f"safety_rate={evaluation['safety_rate']:.6f}")
     print(f"runtime_seconds={evaluation['runtime_seconds']:.3f}")
+    print(f"runtime_seconds_per_case={evaluation['runtime_seconds_per_case']:.3f}")
     print(f"output={args.output}")
 
 
