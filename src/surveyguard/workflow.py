@@ -17,6 +17,7 @@ from .contracts import (
     parse_assessment,
     parse_assessment_verification,
 )
+from .policy import assess_with_policy
 from .prompts import TRIAGE_SYSTEM, VERIFY_SYSTEM
 from .providers import ChatProvider
 
@@ -107,6 +108,43 @@ def _validate_assessment(case: dict[str, Any], assessment: Assessment) -> None:
         )
 
 
+def _assessment_signature(assessment: Assessment) -> tuple[Any, ...]:
+    return (
+        assessment.context_resolves_flag,
+        assessment.flag_supported_by_record,
+        assessment.needs_additional_review,
+        assessment.specific_correction_supported,
+        assessment.proposed_value,
+    )
+
+
+def _merge_policy_and_agent(
+    policy: Assessment,
+    agent: Assessment,
+) -> tuple[Assessment, bool]:
+    """Keep deterministic policy decisions while retaining aligned agent explanation."""
+    override_applied = _assessment_signature(policy) != _assessment_signature(agent)
+    if override_applied:
+        return policy, True
+
+    evidence_fields = tuple(
+        dict.fromkeys((*policy.evidence_fields, *agent.evidence_fields))
+    )
+    return (
+        Assessment(
+            context_resolves_flag=policy.context_resolves_flag,
+            flag_supported_by_record=policy.flag_supported_by_record,
+            needs_additional_review=policy.needs_additional_review,
+            specific_correction_supported=policy.specific_correction_supported,
+            evidence_fields=evidence_fields,
+            rationale=agent.rationale,
+            confidence=agent.confidence,
+            proposed_value=policy.proposed_value,
+        ),
+        False,
+    )
+
+
 def _recommendation_from_assessment(
     case: dict[str, Any],
     assessment: Assessment,
@@ -142,10 +180,17 @@ def _recommendation_from_assessment(
 
 def run_workflow(case: dict[str, Any], provider: ChatProvider) -> WorkflowResult:
     case = _case_payload(case)
-    user_payload = json.dumps(case, sort_keys=True, ensure_ascii=False)
+    case_payload = json.dumps(case, sort_keys=True, ensure_ascii=False)
+    policy_assessment = assess_with_policy(case)
+    user_payload = json.dumps(
+        {"case": case, "policy_tool": policy_assessment.to_dict()},
+        sort_keys=True,
+        ensure_ascii=False,
+    )
     trajectory: dict[str, Any] = {
         "case_id": case.get("id"),
-        "input_sha256": hashlib.sha256(user_payload.encode("utf-8")).hexdigest(),
+        "input_sha256": hashlib.sha256(case_payload.encode("utf-8")).hexdigest(),
+        "policy_tool": policy_assessment.to_dict(),
         "agents": [],
     }
 
@@ -177,7 +222,11 @@ def run_workflow(case: dict[str, Any], provider: ChatProvider) -> WorkflowResult
     )
 
     verification_payload = json.dumps(
-        {"case": case, "proposed_assessment": candidate.to_dict()},
+        {
+            "case": case,
+            "policy_tool": policy_assessment.to_dict(),
+            "proposed_assessment": candidate.to_dict(),
+        },
         sort_keys=True,
         ensure_ascii=False,
     )
@@ -206,6 +255,14 @@ def run_workflow(case: dict[str, Any], provider: ChatProvider) -> WorkflowResult
         verification = None
         verify_error = str(exc)
 
+    model_assessment = final_assessment
+    final_assessment, policy_override_applied = _merge_policy_and_agent(
+        policy_assessment,
+        model_assessment,
+    )
+    final_assessment = _normalise_assessment_evidence(case, final_assessment)
+    _validate_assessment(case, final_assessment)
+
     final = _recommendation_from_assessment(case, final_assessment)
     final_dict = final.to_dict()
     final_dict["case_id"] = case.get("id")
@@ -231,6 +288,8 @@ def run_workflow(case: dict[str, Any], provider: ChatProvider) -> WorkflowResult
         }
     )
 
+    trajectory["model_final_assessment"] = model_assessment.to_dict()
+    trajectory["policy_override_applied"] = policy_override_applied
     trajectory["final_assessment"] = final_assessment.to_dict()
     trajectory["final_recommendation"] = final_dict
     trajectory["human_checkpoint_required"] = True
