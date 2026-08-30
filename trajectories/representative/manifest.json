@@ -1,0 +1,29 @@
+{
+  "source_run": "artifacts\\trajectories_iteration8",
+  "cases": [
+    {
+      "case_id": "SG-003",
+      "source_sha256": "6baa13f7afc4b8b894ca47a3a3edefc87ad8f9d5a0a0fe7bc51a745d3678d0b2",
+      "exported_sha256": "98d0ed8d9d3cbedbe5799620fc51aea1b0a6bd3774cf73ceb3c4283d03833292",
+      "policy_override_applied": true,
+      "final_action": "reject_finding",
+      "final_priority": "low",
+      "agents": [
+        "triage",
+        "verification"
+      ]
+    },
+    {
+      "case_id": "SG-007",
+      "source_sha256": "c9171e7fffc841dae72c9754f22de54c4053308be081af55773ab1a84231adb0",
+      "exported_sha256": "4548ada12857bdebbe8e7aa5d363cb73617623f2c61b58ef0a3f72d92f18c20a",
+      "policy_override_applied": false,
+      "final_action": "defer_review",
+      "final_priority": "high",
+      "agents": [
+        "triage",
+        "verification"
+      ]
+    }
+  ]
+}
