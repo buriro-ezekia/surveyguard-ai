@@ -13,6 +13,7 @@ VERDICT_TO_ACTION = {
     "needs_review": "defer_review",
     "correction_supported": "propose_correction",
 }
+ACTION_TO_VERDICT = {action: verdict for verdict, action in VERDICT_TO_ACTION.items()}
 PRIORITIES = {"critical", "high", "medium", "low"}
 
 
